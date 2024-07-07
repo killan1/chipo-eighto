@@ -17,20 +17,18 @@ int main(int argc, char **argv) {
   MEDIA media = media_init();
 
   uint16_t cc = CYCLES_PER_FRAME, rc = CYCLES_PER_FRAME;
-  uint8_t kb_index;
   uint8_t *vram = chip_get_vram_ref(chip);
+  ChipInput input;
 
   while (media_is_active(media)) {
-    for (kb_index = 0; kb_index < 16; kb_index++) {
-      if (media_is_key_pressed(media, kb_index))
-        chip_kb_btn_pressed(chip, kb_index);
-      if (media_is_key_released(media, kb_index))
-        chip_kb_btn_released(chip, kb_index);
-    }
+    input = read_chip_input(media);
+    chip_update_input(chip, input.i, input.l);
+
     while (cc--) {
       chip_run_cycle(chip);
     }
     cc = rc;
+
     media_frame_start(media);
     media_update_screen(media, vram);
 

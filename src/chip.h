@@ -19,7 +19,7 @@ bool chip_is_sound_timer_active(CHIP8);
 void chip_load_rom(CHIP8, uint8_t *, size_t);
 void chip_kb_btn_pressed(CHIP8, uint8_t);
 void chip_kb_btn_released(CHIP8, uint8_t);
-uint16_t chip_get_input(CHIP8);
+void chip_update_input(CHIP8, uint16_t, uint8_t);
 uint8_t *chip_get_vram_ref(CHIP8);
 
 static const uint8_t font[80] = {

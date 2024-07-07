@@ -89,6 +89,11 @@ void chip_kb_btn_pressed(CHIP8 chip, uint8_t key) {
 
 void chip_kb_btn_released(CHIP8 chip, uint8_t key) { chip->input &= ~1 << key; }
 
+void chip_update_input(CHIP8 chip, uint16_t input, uint8_t key) {
+  chip->input = input;
+  chip->input_key = key;
+}
+
 void chip_load_rom(CHIP8 chip, uint8_t *rom, size_t size) {
   memcpy(&chip->mem[START_ADDRESS], rom, size);
 }

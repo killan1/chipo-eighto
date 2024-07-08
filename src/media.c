@@ -1,6 +1,5 @@
 #include "media.h"
 #include "raylib.h"
-#include <stdbool.h>
 #include <stdlib.h>
 
 #define SCREEN_WIDTH 64

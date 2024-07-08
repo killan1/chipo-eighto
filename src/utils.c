@@ -1,5 +1,4 @@
 #include "utils.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 RomData read_rom_file(char *filename) {

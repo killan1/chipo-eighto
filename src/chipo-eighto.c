@@ -1,10 +1,40 @@
 #include "chip.h"
 #include "media.h"
+#include "sys.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CYCLES_PER_FRAME 20
+static const uint8_t input_keys[16] = {'X', '1', '2', '3', 'Q', 'W', 'E', 'A',
+                                       'S', 'D', 'Z', 'C', '4', 'R', 'F', 'V'};
+
+void chip_handler(InputHandler *h) {
+  CHIP8 chip = h->ctx;
+
+  switch (h->event) {
+  case DOWN:
+    chip_kb_btn_pressed(chip, h->alt);
+    break;
+  case RELEASED:
+    chip_kb_btn_released(chip, h->alt);
+    break;
+  default:
+    break;
+  }
+}
+
+void sys_handler(InputHandler *h) {
+  SYS sys = h->ctx;
+
+  switch (h->alt) {
+  case INCREMENT_CHIP_FREQ:
+    sys_inc_freq(sys);
+    break;
+  case DECREMENT_CHIP_FREQ:
+    sys_dec_freq(sys);
+    break;
+  }
+}
 
 int main(int argc, char **argv) {
   RomData rd = read_rom_file(argv[1]);
@@ -15,21 +45,46 @@ int main(int argc, char **argv) {
   free(rd.data);
 
   MEDIA media = media_init();
+  SYS sys = sys_init();
 
-  uint16_t cc = CYCLES_PER_FRAME, rc = CYCLES_PER_FRAME;
+  for (uint8_t i = 0; i < 16; i++) {
+    InputHandler dh = {.keycode = input_keys[i],
+                       .alt = i,
+                       .event = DOWN,
+                       .ctx = chip,
+                       .handle = &chip_handler};
+    media_register_input_handler(media, dh);
+    InputHandler uh = {.keycode = input_keys[i],
+                       .alt = i,
+                       .event = RELEASED,
+                       .ctx = chip,
+                       .handle = &chip_handler};
+    media_register_input_handler(media, uh);
+  }
+
+  InputHandler ih = {.keycode = '=',
+                     .alt = INCREMENT_CHIP_FREQ,
+                     .event = PRESSED,
+                     .ctx = sys,
+                     .handle = &sys_handler};
+  media_register_input_handler(media, ih);
+  InputHandler dh = {.keycode = '-',
+                     .alt = DECREMENT_CHIP_FREQ,
+                     .event = PRESSED,
+                     .ctx = sys,
+                     .handle = &sys_handler};
+  media_register_input_handler(media, dh);
+
   uint8_t *vram = chip_get_vram_ref(chip);
-  ChipInput input;
 
   while (media_is_active(media)) {
-    input = read_chip_input(media);
-    chip_update_input(chip, input.i, input.l);
-
-    while (cc--) {
+    while (sys_is_chip_active(sys)) {
       chip_run_cycle(chip);
     }
-    cc = rc;
+    sys_reset_cycles(sys);
 
     media_frame_start(media);
+    media_read_input(media);
     media_update_screen(media, vram);
 
     if (chip_is_sound_timer_active(chip)) {

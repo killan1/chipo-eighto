@@ -8,14 +8,12 @@
 #define SCALING 10
 #define CHIP_KEYBOARD_SIZE 16
 #define TARGET_FPS 60
-
-static const uint8_t keys[CHIP_KEYBOARD_SIZE] = {
-    KEY_X, KEY_ONE, KEY_TWO, KEY_THREE, KEY_Q,    KEY_W, KEY_E, KEY_A,
-    KEY_S, KEY_D,   KEY_Z,   KEY_C,     KEY_FOUR, KEY_R, KEY_F, KEY_V};
+#define MAX_INPUT_HANDLERS 100
 
 struct media {
   Sound sound;
-  ChipInput input;
+  InputHandler *ihandlers;
+  uint16_t ihandler_count;
 };
 
 MEDIA media_init() {
@@ -24,8 +22,8 @@ MEDIA media_init() {
 
   SetTargetFPS(TARGET_FPS);
 
-  ChipInput input = {.i = 0, .l = 0};
-  media->input = input;
+  media->ihandlers = malloc(MAX_INPUT_HANDLERS * sizeof(InputHandler));
+  media->ihandler_count = 0;
   /* media->sound = LoadSound("beep.wav"); */
 
   return media;
@@ -57,29 +55,38 @@ void media_destroy(MEDIA media) {
   CloseWindow();
 }
 
-bool media_is_key_pressed(MEDIA media, uint8_t key) {
-  return IsKeyDown(keys[key]);
-}
+void media_read_input(MEDIA media) {
+  InputHandler handler;
+  for (uint8_t i = 0; i < media->ihandler_count; i++) {
+    handler = media->ihandlers[i];
 
-bool media_is_key_released(MEDIA media, uint8_t key) {
-  return IsKeyReleased(keys[key]);
-}
-
-ChipInput read_chip_input(MEDIA media) {
-  for (uint8_t key = 0; key < CHIP_KEYBOARD_SIZE; key++) {
-    if (IsKeyPressed(keys[key]))
-      media->input.l = key;
-
-    if (IsKeyDown(keys[key])) {
-      media->input.i |= 1 << key;
-    }
-
-    if (IsKeyReleased(keys[key])) {
-      media->input.i &= ~1 << key;
+    switch (handler.event) {
+    case UP:
+      if (IsKeyUp(handler.keycode))
+        handler.handle(&handler);
+      break;
+    case DOWN:
+      if (IsKeyDown(handler.keycode))
+        handler.handle(&handler);
+      break;
+    case PRESSED:
+      if (IsKeyPressed(handler.keycode))
+        handler.handle(&handler);
+      break;
+    case RELEASED:
+      if (IsKeyReleased(handler.keycode))
+        handler.handle(&handler);
+      break;
+    default:
+      break;
     }
   }
+}
 
-  return media->input;
+void media_register_input_handler(MEDIA media, InputHandler handler) {
+  if (media->ihandler_count < MAX_INPUT_HANDLERS) {
+    media->ihandlers[media->ihandler_count++] = handler;
+  }
 }
 
 void media_play_sound(MEDIA media) { /* PlaySound(media->sound); */ }

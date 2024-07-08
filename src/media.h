@@ -1,5 +1,5 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef MEDIA_H
+#define MEDIA_H
 
 #include <stdbool.h>
 #include <stdint.h>

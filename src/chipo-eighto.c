@@ -1,15 +1,10 @@
 #include "chip.h"
 #include "media.h"
+#include "sys.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CYCLES_PER_FRAME 20
-
-typedef struct {
-  uint16_t cycles;
-  uint16_t cycles_per_frame;
-} ChipSystem;
 static const uint8_t input_keys[16] = {'X', '1', '2', '3', 'Q', 'W', 'E', 'A',
                                        'S', 'D', 'Z', 'C', '4', 'R', 'F', 'V'};
 
@@ -28,21 +23,17 @@ void chip_handler(InputHandler *h) {
   }
 }
 
-void sys_inc_cpf(InputHandler *h) {
-  ChipSystem *sys = h->ctx;
+void sys_handler(InputHandler *h) {
+  SYS sys = h->ctx;
 
-  sys->cycles_per_frame += 50;
-  printf("CPF: %d\n", sys->cycles_per_frame);
-}
-
-void sys_dec_cpf(InputHandler *h) {
-  ChipSystem *sys = h->ctx;
-
-  if (sys->cycles_per_frame <= 50)
-    sys->cycles_per_frame = CYCLES_PER_FRAME;
-  else
-    sys->cycles_per_frame -= 50;
-  printf("CPF: %d\n", sys->cycles_per_frame);
+  switch (h->alt) {
+  case INCREMENT_CHIP_FREQ:
+    sys_inc_freq(sys);
+    break;
+  case DECREMENT_CHIP_FREQ:
+    sys_dec_freq(sys);
+    break;
+  }
 }
 
 int main(int argc, char **argv) {
@@ -53,10 +44,8 @@ int main(int argc, char **argv) {
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  ChipSystem sys = {.cycles = CYCLES_PER_FRAME,
-                    .cycles_per_frame = CYCLES_PER_FRAME};
-
   MEDIA media = media_init();
+  SYS sys = sys_init();
 
   for (uint8_t i = 0; i < 16; i++) {
     InputHandler dh = {.keycode = input_keys[i],
@@ -74,25 +63,25 @@ int main(int argc, char **argv) {
   }
 
   InputHandler ih = {.keycode = '=',
-                     .alt = 0,
+                     .alt = INCREMENT_CHIP_FREQ,
                      .event = PRESSED,
-                     .ctx = &sys,
-                     .handle = &sys_inc_cpf};
+                     .ctx = sys,
+                     .handle = &sys_handler};
   media_register_input_handler(media, ih);
   InputHandler dh = {.keycode = '-',
-                     .alt = 0,
+                     .alt = DECREMENT_CHIP_FREQ,
                      .event = PRESSED,
-                     .ctx = &sys,
-                     .handle = &sys_dec_cpf};
+                     .ctx = sys,
+                     .handle = &sys_handler};
   media_register_input_handler(media, dh);
 
   uint8_t *vram = chip_get_vram_ref(chip);
 
   while (media_is_active(media)) {
-    while (sys.cycles--) {
+    while (sys_is_chip_active(sys)) {
       chip_run_cycle(chip);
     }
-    sys.cycles = sys.cycles_per_frame;
+    sys_reset_cycles(sys);
 
     media_frame_start(media);
     media_read_input(media);

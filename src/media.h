@@ -1,6 +1,7 @@
 #ifndef MEDIA_H
 #define MEDIA_H
 
+#include "sys.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -14,7 +15,7 @@ typedef struct InputHandler {
   void (*handle)(struct InputHandler *);
 } InputHandler;
 
-MEDIA media_init(void);
+MEDIA media_init(SYS);
 bool media_is_active(MEDIA);
 void media_update_screen(MEDIA, uint8_t *);
 void media_frame_start(MEDIA);

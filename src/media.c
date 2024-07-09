@@ -1,5 +1,6 @@
 #include "media.h"
 #include "raylib.h"
+#include "sys.h"
 #include "utils.h"
 #include <stdlib.h>
 
@@ -11,17 +12,20 @@
 #define MAX_INPUT_HANDLERS 100
 
 struct media {
+  SYS sys;
   Sound sound;
   InputHandler *ihandlers;
   uint16_t ihandler_count;
 };
 
-MEDIA media_init() {
+MEDIA media_init(SYS sys) {
   MEDIA media = malloc(sizeof(struct media));
 
   if (media == NULL) {
     terminate("Failed to allocate memory");
   }
+
+  media->sys = sys;
 
   InitWindow(SCREEN_WIDTH * SCALING, SCREEN_HEIGHT * SCALING, "Chipo EIGHTo");
 
@@ -57,7 +61,8 @@ void media_frame_start(MEDIA media) {
 }
 
 void media_frame_end(MEDIA media) {
-  DrawFPS(10, 10);
+  if (sys_is_show_fps(media->sys))
+    DrawFPS(10, 10);
   EndDrawing();
 }
 

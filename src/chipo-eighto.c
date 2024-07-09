@@ -33,6 +33,9 @@ void sys_handler(InputHandler *h) {
   case DECREMENT_CHIP_FREQ:
     sys_dec_freq(sys);
     break;
+  case TOGGLE_FPS:
+    sys_toggle_fps(sys);
+    break;
   }
 }
 
@@ -40,12 +43,12 @@ int main(int argc, char **argv) {
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
+  SYS sys = sys_init();
   CHIP8 chip = chip_init();
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MEDIA media = media_init();
-  SYS sys = sys_init();
+  MEDIA media = media_init(sys);
 
   for (uint8_t i = 0; i < 16; i++) {
     InputHandler dh = {.keycode = input_keys[i],
@@ -74,6 +77,12 @@ int main(int argc, char **argv) {
                      .ctx = sys,
                      .handle = &sys_handler};
   media_register_input_handler(media, dh);
+  InputHandler fps = {.keycode = '`',
+                      .alt = TOGGLE_FPS,
+                      .event = PRESSED,
+                      .ctx = sys,
+                      .handle = &sys_handler};
+  media_register_input_handler(media, fps);
 
   uint8_t *vram = chip_get_vram_ref(chip);
 

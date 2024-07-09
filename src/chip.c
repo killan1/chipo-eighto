@@ -107,159 +107,170 @@ void chip_update_timers(CHIP8 chip) {
 
 bool chip_is_sound_timer_active(CHIP8 chip) { return chip->st > 0; }
 
-static void op_unsupported(CHIP8 chip) {
+static void opcode_unsupported(CHIP8 chip) {
   printf("WARNING: unsupported opcode %04X\n", chip->opcode);
   exit(EXIT_FAILURE);
 }
 
-static void op_jmp(CHIP8 chip) {
-  chip->pc = chip->opcode & 0x0FFF;
-  /* printf("JMP OP=%04X PC=%04X\n", chip->opcode, chip->pc); */
+static void opcode_1xxx(CHIP8 chip) { chip->pc = chip->opcode & 0xFFF; }
+
+static void opcode_6xkk(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t value = (uint8_t)(chip->opcode & 0xFF);
+
+  chip->regs[x] = value;
 }
 
-static void op_regload(CHIP8 chip) {
-  /* printf("REG LD OP=%04X PC=%04X\n", chip->opcode, chip->pc); */
-  uint8_t reg = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t value = (uint8_t)(chip->opcode & 0x00FF);
+static void opcode_7xkk(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t value = (uint8_t)(chip->opcode & 0xFF);
 
-  chip->regs[reg] = value;
-  /* printf("V%X = %04X\n", reg, value); */
+  chip->regs[x] += value;
 }
 
-static void op_regadd(CHIP8 chip) {
-  /* printf("REG ADD OP=%04X PC=%04X\n", chip->opcode, chip->pc); */
-  uint8_t reg = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t value = (uint8_t)(chip->opcode & 0x00FF);
-
-  /* printf("V%X = %04X prev=%04X\n", reg, value, chip->regs[reg]); */
-  chip->regs[reg] += value;
-  /* printf("V%X = %04X\n", reg, chip->regs[reg]); */
-}
-
-static void op_clrvram(CHIP8 chip) {
-  /* printf("CLR OP=%04X PC=%04X\n", chip->opcode, chip->pc); */
+static void opcode_00E0(CHIP8 chip) {
   for (uint16_t i = 0; i < VMEM_SIZE; i++)
     chip->vram[i] = 0;
 }
 
-static void op_ret(CHIP8 chip) {
+static void opcode_00EE(CHIP8 chip) {
   if (chip->sp > 0)
     chip->pc = chip->stack[chip->sp--];
 }
 
-static void op_calladdr(CHIP8 chip) {
+static void opcode_2nnn(CHIP8 chip) {
   chip->stack[++chip->sp] = chip->pc;
-  chip->pc = chip->opcode & 0x0FFF;
+  chip->pc = chip->opcode & 0xFFF;
 }
 
-static void op_regse(CHIP8 chip) {
-  uint8_t x = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t value = (uint8_t)(chip->opcode & 0x00FF);
+static void opcode_3xkk(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t value = (uint8_t)(chip->opcode & 0xFF);
 
   if (chip->regs[x] == value)
     chip->pc += 2;
 }
 
-static void op_regsne(CHIP8 chip) {
-  uint8_t reg = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t value = (uint8_t)(chip->opcode & 0x00FF);
+static void opcode_4xkk(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t value = (uint8_t)(chip->opcode & 0xFF);
 
-  if (chip->regs[reg] != value)
+  if (chip->regs[x] != value)
     chip->pc += 2;
 }
 
-static void op_regsse(CHIP8 chip) {
-  uint8_t regx = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t regy = (uint8_t)(chip->opcode >> 4) & 0x000F;
+static void opcode_5xy0(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
-  if (chip->regs[regx] == chip->regs[regy])
+  if (chip->regs[x] == chip->regs[y])
     chip->pc += 2;
 }
 
-static void op_regssne(CHIP8 chip) {
-  uint8_t regx = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t regy = (uint8_t)(chip->opcode >> 4) & 0x000F;
+static void opcode_9xy0(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
-  if (chip->regs[regx] != chip->regs[regy])
+  if (chip->regs[x] != chip->regs[y])
     chip->pc += 2;
 }
 
-static void op_arlog(CHIP8 chip) {
-  uint8_t x = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  uint8_t y = (uint8_t)(chip->opcode >> 4) & 0x000F;
+static void opcode_8xy0(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
-  switch (chip->opcode & 0x000F) {
-  case 0x0:
-    chip->regs[x] = chip->regs[y];
-    break;
-  case 0x1:
-    chip->regs[x] |= chip->regs[y];
-    chip->regs[0xF] = 0;
-    break;
-  case 0x2:
-    chip->regs[x] &= chip->regs[y];
-    chip->regs[0xF] = 0;
-    break;
-  case 0x3:
-    chip->regs[x] ^= chip->regs[y];
-    chip->regs[0xF] = 0;
-    break;
-  case 0x4: {
-    uint8_t vf = 255 - chip->regs[x] < chip->regs[y] ? 1 : 0;
-    chip->regs[x] += chip->regs[y];
-    chip->regs[0xF] = vf;
-    break;
-  }
-  case 0x5: {
-    uint8_t vf = chip->regs[x] >= chip->regs[y] ? 1 : 0;
-    chip->regs[x] -= chip->regs[y];
-    chip->regs[0xF] = vf;
-    break;
-  }
-  case 0x6: {
-    chip->regs[x] = chip->regs[y];
-    uint8_t vf = chip->regs[x] & 0x1;
-    chip->regs[x] >>= 1;
-    chip->regs[0xF] = vf;
-    break;
-  }
-  case 0x7: {
-    uint8_t vf = chip->regs[y] >= chip->regs[x] ? 1 : 0;
-    chip->regs[x] = chip->regs[y] - chip->regs[x];
-    chip->regs[0xF] = vf;
-    break;
-  }
-  case 0xE: {
-    chip->regs[x] = chip->regs[y];
-    uint8_t vf = (chip->regs[x] >> 7) & 0x1;
-    chip->regs[x] <<= 1;
-    chip->regs[0xF] = vf;
-    break;
-  }
-  default:
-    break;
-  }
+  chip->regs[x] = chip->regs[y];
 }
 
-static void op_ldi(CHIP8 chip) {
-  /* printf("LDI OP=%04X PC=%04X\n", chip->opcode, chip->pc); */
-  chip->index = chip->opcode & 0x0FFF;
+static void opcode_8xy1(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  chip->regs[x] |= chip->regs[y];
+  chip->regs[0xF] = 0;
 }
 
-static void op_jmpv0(CHIP8 chip) {
-  chip->pc = (chip->opcode & 0x0FFF) + chip->regs[0x0];
+static void opcode_8xy2(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  chip->regs[x] &= chip->regs[y];
+  chip->regs[0xF] = 0;
 }
 
-static void op_rnd(CHIP8 chip) {
+static void opcode_8xy3(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  chip->regs[x] ^= chip->regs[y];
+  chip->regs[0xF] = 0;
+}
+
+static void opcode_8xy4(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  uint8_t vf = 255 - chip->regs[x] < chip->regs[y] ? 1 : 0;
+  chip->regs[x] += chip->regs[y];
+  chip->regs[0xF] = vf;
+}
+
+static void opcode_8xy5(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  uint8_t vf = chip->regs[x] >= chip->regs[y] ? 1 : 0;
+  chip->regs[x] -= chip->regs[y];
+  chip->regs[0xF] = vf;
+}
+
+static void opcode_8xy6(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  chip->regs[x] = chip->regs[y];
+  uint8_t vf = chip->regs[x] & 0x1;
+  chip->regs[x] >>= 1;
+  chip->regs[0xF] = vf;
+}
+
+static void opcode_8xy7(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  uint8_t vf = chip->regs[y] >= chip->regs[x] ? 1 : 0;
+  chip->regs[x] = chip->regs[y] - chip->regs[x];
+  chip->regs[0xF] = vf;
+}
+
+static void opcode_8xyE(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+
+  chip->regs[x] = chip->regs[y];
+  uint8_t vf = (chip->regs[x] >> 7) & 0x1;
+  chip->regs[x] <<= 1;
+  chip->regs[0xF] = vf;
+}
+
+static void opcode_Annn(CHIP8 chip) { chip->index = chip->opcode & 0xFFF; }
+
+static void opcode_Bnnn(CHIP8 chip) {
+  chip->pc = (chip->opcode & 0xFFF) + chip->regs[0x0];
+}
+
+static void opcode_Cxkk(CHIP8 chip) {
   uint8_t rv = (uint8_t)(rand() / (RAND_MAX / 256));
-  uint8_t x = (uint8_t)(chip->opcode >> 8) & 0x000F;
-  chip->regs[x] &= rv;
+  uint8_t x = (uint8_t)(chip->opcode >> 8) & 0xF;
+  uint8_t value = (uint8_t)(chip->opcode >> 8) & 0xFF;
+
+  chip->regs[x] = rv && value;
 }
 
-static void op_display(CHIP8 chip) {
-  uint8_t vx = chip->regs[(uint8_t)(chip->opcode >> 8) & 0x000F] & 63;
-  uint8_t vy = chip->regs[(uint8_t)(chip->opcode >> 4) & 0x000F] & 31;
-  uint16_t posx = 0, posy = 0, rows = chip->opcode & 0x000F;
+static void opcode_Dxyn(CHIP8 chip) {
+  uint8_t vx = chip->regs[(uint8_t)(chip->opcode >> 8 & 0xF)] & 63;
+  uint8_t vy = chip->regs[(uint8_t)(chip->opcode >> 4 & 0xF)] & 31;
+  uint16_t posx = 0, posy = 0, rows = chip->opcode & 0xF;
   uint8_t sprite_data, pixel_i;
 
   chip->regs[0xF] = 0;
@@ -289,54 +300,53 @@ static void op_display(CHIP8 chip) {
   }
 }
 
-static void op_skp(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  uint8_t key = chip->regs[vx] & 0xF;
+static void opcode_Ex9E(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t vx = chip->regs[x] & 0xF;
 
-  if (chip->input & (1 << key))
+  if (chip->input & (1 << vx))
     chip->pc += 2;
 }
 
-static void op_sknp(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  uint8_t key = chip->regs[vx] & 0xF;
+static void opcode_ExA1(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  uint8_t vx = chip->regs[x] & 0xF;
 
-  if (!(chip->input & (1 << key)))
+  if (!(chip->input & (1 << vx)))
     chip->pc += 2;
 }
 
-static void op_lddt(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  chip->regs[vx] = chip->dt;
-  /* printf("%d %d %d\n", vx, chip->regs[vx], chip->dt); */
+static void opcode_Fx07(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->regs[x] = chip->dt;
 }
 
-static void op_waitkey(CHIP8 chip) {
+static void opcode_Fx0A(CHIP8 chip) {
   if (chip->input) {
-    uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-    chip->regs[vx] = chip->input_key;
+    uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+    chip->regs[x] = chip->input_key;
   } else {
     chip->pc -= 2;
   }
 }
 
-static void op_setdt(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  chip->dt = chip->regs[vx];
+static void opcode_Fx15(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->dt = chip->regs[x];
 }
 
-static void op_setst(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  chip->st = chip->regs[vx];
+static void opcode_Fx18(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->st = chip->regs[x];
 }
 
-static void op_ldf(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  chip->index = (chip->regs[vx] & 0xF) * 5;
+static void opcode_Fx29(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->index = (chip->regs[x] & 0xF) * 5;
 }
 
-static void op_ldb(CHIP8 chip) {
-  uint8_t x = (chip->opcode & 0x0F00) >> 8;
+static void opcode_Fx33(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
   uint8_t i = 3;
   uint8_t vx = chip->regs[x];
 
@@ -347,26 +357,28 @@ static void op_ldb(CHIP8 chip) {
   }
 }
 
-static void op_ldix(CHIP8 chip) {
-  uint8_t x = ((chip->opcode & 0x0F00) >> 8) & 0xF;
+static void opcode_Fx55(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
   for (int i = 0; i <= x; i++) {
     chip->mem[chip->index++] = chip->regs[i];
   }
 }
 
-static void op_ldxi(CHIP8 chip) {
-  uint8_t x = ((chip->opcode & 0x0F00) >> 8) & 0xF;
+static void opcode_Fx65(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
   for (int i = 0; i <= x; i++) {
     chip->regs[i] = chip->mem[chip->index++];
   }
 }
 
-static void op_addi(CHIP8 chip) {
-  uint8_t vx = (chip->opcode & 0x0F00) >> 8;
-  chip->index += chip->regs[vx];
+static void opcode_Fx1E(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->index += chip->regs[x];
 }
+
+static void opcode_nop(CHIP8 chip) {}
 
 static void fetch(CHIP8 chip) {
   uint16_t op_h, op_l;
@@ -374,116 +386,143 @@ static void fetch(CHIP8 chip) {
   op_h = chip->mem[chip->pc] << 8;
   op_l = chip->mem[chip->pc + 1];
   chip->opcode = op_h | op_l;
-  /* printf("OP=%04X PC=%4X\n", chip->opcode, chip->pc); */
   chip->pc += 2;
 }
 
-static void op_ignore(CHIP8 chip) {}
-
 static void decode(CHIP8 chip) {
-  /* printf("OP=%4X PC=%4X\n", chip->opcode, chip->pc); */
   switch (chip->opcode & 0xF000) {
   case 0x0000:
     switch (chip->opcode & 0x00FF) {
     case 0x00E0:
-      chip->exec = &op_clrvram;
+      chip->exec = &opcode_00E0;
       break;
     case 0x00EE:
-      chip->exec = &op_ret;
+      chip->exec = &opcode_00EE;
       break;
     default:
-      chip->exec = &op_ignore;
+      chip->exec = &opcode_nop;
       break;
     }
     break;
   case 0x1000:
-    chip->exec = &op_jmp;
+    chip->exec = &opcode_1xxx;
     break;
   case 0x2000:
-    chip->exec = &op_calladdr;
+    chip->exec = &opcode_2nnn;
     break;
   case 0x3000:
-    chip->exec = &op_regse;
+    chip->exec = &opcode_3xkk;
     break;
   case 0x4000:
-    chip->exec = &op_regsne;
+    chip->exec = &opcode_4xkk;
     break;
   case 0x5000:
-    chip->exec = &op_regsse;
+    chip->exec = &opcode_5xy0;
     break;
   case 0x6000:
-    chip->exec = &op_regload;
+    chip->exec = &opcode_6xkk;
     break;
   case 0x7000:
-    chip->exec = &op_regadd;
+    chip->exec = &opcode_7xkk;
     break;
-  case 0x8000:
-    chip->exec = &op_arlog;
-    break;
-  case 0x9000:
-    chip->exec = &op_regssne;
-    break;
-  case 0xA000:
-    chip->exec = &op_ldi;
-    break;
-  case 0xB000:
-    chip->exec = &op_jmpv0;
-    break;
-  case 0xC000:
-    chip->exec = &op_rnd;
-    break;
-  case 0xD000:
-    chip->exec = &op_display;
-    break;
-  case 0xE000:
-    switch (chip->opcode & 0x00FF) {
-    case 0x009E:
-      chip->exec = &op_skp;
+  case 0x8000: {
+    switch (chip->opcode & 0xF) {
+    case 0x0:
+      chip->exec = &opcode_8xy0;
       break;
-    case 0x00A1:
-      chip->exec = &op_sknp;
+    case 0x1:
+      chip->exec = &opcode_8xy1;
+      break;
+    case 0x2:
+      chip->exec = &opcode_8xy2;
+      break;
+    case 0x3:
+      chip->exec = &opcode_8xy3;
+      break;
+    case 0x4:
+      chip->exec = &opcode_8xy4;
+      break;
+    case 0x5:
+      chip->exec = &opcode_8xy5;
+      break;
+    case 0x6:
+      chip->exec = &opcode_8xy6;
+      break;
+    case 0x7:
+      chip->exec = &opcode_8xy7;
+      break;
+    case 0xE:
+      chip->exec = &opcode_8xyE;
       break;
     default:
-      chip->exec = &op_unsupported;
+      chip->exec = &opcode_unsupported;
+    }
+    break;
+  }
+  case 0x9000:
+    chip->exec = &opcode_9xy0;
+    break;
+  case 0xA000:
+    chip->exec = &opcode_Annn;
+    break;
+  case 0xB000:
+    chip->exec = &opcode_Bnnn;
+    break;
+  case 0xC000:
+    chip->exec = &opcode_Cxkk;
+    break;
+  case 0xD000:
+    chip->exec = &opcode_Dxyn;
+    break;
+  case 0xE000:
+    switch (chip->opcode & 0xFF) {
+    case 0x009E:
+      chip->exec = &opcode_Ex9E;
+      break;
+    case 0x00A1:
+      chip->exec = &opcode_ExA1;
+      break;
+    default:
+      chip->exec = &opcode_unsupported;
       break;
     }
     break;
   case 0xF000:
-    switch (chip->opcode & 0x00FF) {
+    switch (chip->opcode & 0xFF) {
     case 0x0007:
-      chip->exec = &op_lddt;
+      chip->exec = &opcode_Fx07;
       break;
     case 0x000A:
-      chip->exec = &op_waitkey;
+      chip->exec = &opcode_Fx0A;
       break;
     case 0x0015:
-      chip->exec = &op_setdt;
+      chip->exec = &opcode_Fx15;
       break;
     case 0x0018:
-      chip->exec = &op_setst;
+      chip->exec = &opcode_Fx18;
       break;
     case 0x001E:
-      chip->exec = &op_addi;
+      chip->exec = &opcode_Fx1E;
       break;
     case 0x0029:
-      chip->exec = &op_ldf;
+      chip->exec = &opcode_Fx29;
       break;
     case 0x0033:
-      chip->exec = &op_ldb;
+      chip->exec = &opcode_Fx33;
       break;
     case 0x0055:
-      chip->exec = &op_ldix;
+      chip->exec = &opcode_Fx55;
       break;
     case 0x0065:
-      chip->exec = &op_ldxi;
+      chip->exec = &opcode_Fx65;
       break;
     default:
-      chip->exec = &op_unsupported;
+      chip->exec = &opcode_unsupported;
       break;
     }
     break;
   default:
-    chip->exec = &op_unsupported;
+    chip->exec = &opcode_unsupported;
     break;
   }
 }

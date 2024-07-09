@@ -1,5 +1,6 @@
 #include "media.h"
 #include "raylib.h"
+#include "utils.h"
 #include <stdlib.h>
 
 #define SCREEN_WIDTH 64
@@ -17,11 +18,22 @@ struct media {
 
 MEDIA media_init() {
   MEDIA media = malloc(sizeof(struct media));
+
+  if (media == NULL) {
+    terminate("Failed to allocate memory");
+  }
+
   InitWindow(SCREEN_WIDTH * SCALING, SCREEN_HEIGHT * SCALING, "Chipo EIGHTo");
 
   SetTargetFPS(TARGET_FPS);
 
   media->ihandlers = malloc(MAX_INPUT_HANDLERS * sizeof(InputHandler));
+
+  if (media->ihandlers == NULL) {
+    free(media);
+    terminate("Failed to allocate memory");
+  }
+
   media->ihandler_count = 0;
   /* media->sound = LoadSound("beep.wav"); */
 

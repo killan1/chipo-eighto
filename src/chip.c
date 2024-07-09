@@ -1,4 +1,5 @@
 #include "chip.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -22,7 +23,6 @@ struct chip8 {
   void (*exec)(CHIP8);
 };
 
-static void terminate(const char *msg);
 static void fetch(CHIP8);
 static void decode(CHIP8);
 static void execute(CHIP8);
@@ -46,6 +46,7 @@ CHIP8 chip_init() {
     chip_destroy(chip);
     terminate("Failed to allocate memory");
   }
+
   chip->pc = START_ADDRESS;
   chip->index = 0;
   chip->dt = 0;
@@ -105,11 +106,6 @@ void chip_update_timers(CHIP8 chip) {
 }
 
 bool chip_is_sound_timer_active(CHIP8 chip) { return chip->st > 0; }
-
-static void terminate(const char *msg) {
-  printf("%s\n", msg);
-  exit(EXIT_FAILURE);
-}
 
 static void op_unsupported(CHIP8 chip) {
   printf("WARNING: unsupported opcode %04X\n", chip->opcode);

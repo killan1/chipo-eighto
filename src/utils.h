@@ -10,5 +10,6 @@ typedef struct {
 } RomData;
 
 RomData read_rom_file(char *);
+void terminate(const char *msg);
 
 #endif

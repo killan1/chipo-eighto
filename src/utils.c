@@ -17,8 +17,7 @@ RomData read_rom_file(char *filename) {
 
   if (rom_data == NULL) {
     fclose(fp);
-    printf("Failed to allocate memory for rom data\n");
-    exit(EXIT_FAILURE);
+    terminate("Failed to allocate memory for rom data");
   }
 
   size_t total_read = fread(rom_data, sizeof(uint8_t), size, fp);
@@ -26,8 +25,7 @@ RomData read_rom_file(char *filename) {
   if (total_read != size) {
     free(rom_data);
     fclose(fp);
-    printf("Failed to read file\n");
-    exit(EXIT_FAILURE);
+    terminate("Failed to read file");
   }
 
   fclose(fp);
@@ -35,4 +33,9 @@ RomData read_rom_file(char *filename) {
   RomData result = {.data = rom_data, .size = size};
 
   return result;
+}
+
+void terminate(const char *msg) {
+  printf("%s\n", msg);
+  exit(EXIT_FAILURE);
 }

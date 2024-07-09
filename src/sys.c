@@ -1,4 +1,5 @@
 #include "sys.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,6 +13,10 @@ struct sys {
 
 SYS sys_init() {
   SYS sys = malloc(sizeof(struct sys));
+
+  if (sys == NULL) {
+    terminate("Failed to allocate memory");
+  }
 
   sys->chip_cycles_left = FREQ_DEFAULT;
   sys->chip_freq = FREQ_DEFAULT;

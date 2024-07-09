@@ -33,8 +33,15 @@ void sys_handler(InputHandler *h) {
   case DECREMENT_CHIP_FREQ:
     sys_dec_freq(sys);
     break;
+  }
+}
+
+void media_handler(InputHandler *h) {
+  MEDIA media = h->ctx;
+
+  switch (h->alt) {
   case TOGGLE_FPS:
-    sys_toggle_fps(sys);
+    media_toggle_fps(media);
     break;
   }
 }
@@ -48,7 +55,8 @@ int main(int argc, char **argv) {
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MEDIA media = media_init(sys);
+  MEDIA media = media_init((unsigned char[]){0, 0, 0, 255},
+                           (unsigned char[]){0, 238, 0, 255});
 
   for (uint8_t i = 0; i < 16; i++) {
     InputHandler dh = {.keycode = input_keys[i],
@@ -80,8 +88,8 @@ int main(int argc, char **argv) {
   InputHandler fps = {.keycode = '`',
                       .alt = TOGGLE_FPS,
                       .event = PRESSED,
-                      .ctx = sys,
-                      .handle = &sys_handler};
+                      .ctx = media,
+                      .handle = &media_handler};
   media_register_input_handler(media, fps);
 
   uint8_t *vram = chip_get_vram_ref(chip);

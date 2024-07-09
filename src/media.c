@@ -1,6 +1,5 @@
 #include "media.h"
 #include "raylib.h"
-#include "sys.h"
 #include "utils.h"
 #include <stdlib.h>
 
@@ -12,20 +11,20 @@
 #define MAX_INPUT_HANDLERS 100
 
 struct media {
-  SYS sys;
   Sound sound;
   InputHandler *ihandlers;
   uint16_t ihandler_count;
+  bool show_fps;
+  Color bg;
+  Color spr;
 };
 
-MEDIA media_init(SYS sys) {
+MEDIA media_init(unsigned char *bg, unsigned char *spr) {
   MEDIA media = malloc(sizeof(struct media));
 
   if (media == NULL) {
     terminate("Failed to allocate memory");
   }
-
-  media->sys = sys;
 
   InitWindow(SCREEN_WIDTH * SCALING, SCREEN_HEIGHT * SCALING, "Chipo EIGHTo");
 
@@ -39,6 +38,9 @@ MEDIA media_init(SYS sys) {
   }
 
   media->ihandler_count = 0;
+  media->show_fps = false;
+  media->bg = (Color){bg[0], bg[1], bg[2], bg[3]};
+  media->spr = (Color){spr[0], spr[1], spr[2], spr[3]};
   /* media->sound = LoadSound("beep.wav"); */
 
   return media;
@@ -46,22 +48,24 @@ MEDIA media_init(SYS sys) {
 
 bool media_is_active(MEDIA media) { return !WindowShouldClose(); }
 
+void media_toggle_fps(MEDIA media) { media->show_fps = !media->show_fps; }
+
 void media_update_screen(MEDIA media, uint8_t *vram) {
   uint16_t x, y;
   for (x = 0; x < SCREEN_WIDTH; x++) {
     for (y = 0; y < SCREEN_HEIGHT; y++)
       if (vram[y * SCREEN_WIDTH + x])
-        DrawRectangle(x * SCALING, y * SCALING, SCALING, SCALING, WHITE);
+        DrawRectangle(x * SCALING, y * SCALING, SCALING, SCALING, media->spr);
   }
 }
 
 void media_frame_start(MEDIA media) {
   BeginDrawing();
-  ClearBackground(BLACK);
+  ClearBackground(media->bg);
 }
 
 void media_frame_end(MEDIA media) {
-  if (sys_is_show_fps(media->sys))
+  if (media->show_fps)
     DrawFPS(10, 10);
   EndDrawing();
 }

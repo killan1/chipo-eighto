@@ -11,6 +11,8 @@ struct sys {
   uint16_t chip_cycles_left;
   uint16_t chip_freq;
   bool show_fps;
+  unsigned char *bg_color;
+  unsigned char *spr_color;
 };
 
 SYS sys_init() {
@@ -43,7 +45,3 @@ void sys_dec_freq(SYS sys) {
 bool sys_is_chip_active(SYS sys) { return sys->chip_cycles_left-- > 0; }
 
 void sys_reset_cycles(SYS sys) { sys->chip_cycles_left = sys->chip_freq; }
-
-void sys_toggle_fps(SYS sys) { sys->show_fps = !sys->show_fps; }
-
-bool sys_is_show_fps(SYS sys) { return sys->show_fps; }

@@ -8,6 +8,7 @@
 #define MEM_SIZE 0x1000
 #define VMEM_SIZE 0x0800
 #define START_ADDRESS 0x0200
+#define SPRITE_WIDTH 8
 
 typedef struct chip8 *CHIP8;
 

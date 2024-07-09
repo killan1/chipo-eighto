@@ -194,33 +194,48 @@ static void op_arlog(CHIP8 chip) {
     break;
   case 0x1:
     chip->regs[x] |= chip->regs[y];
+    chip->regs[0xF] = 0;
     break;
   case 0x2:
     chip->regs[x] &= chip->regs[y];
+    chip->regs[0xF] = 0;
     break;
   case 0x3:
     chip->regs[x] ^= chip->regs[y];
+    chip->regs[0xF] = 0;
     break;
-  case 0x4:
-    chip->regs[0xF] = 255 - chip->regs[x] < chip->regs[y] ? 1 : 0;
+  case 0x4: {
+    uint8_t vf = 255 - chip->regs[x] < chip->regs[y] ? 1 : 0;
     chip->regs[x] += chip->regs[y];
+    chip->regs[0xF] = vf;
     break;
-  case 0x5:
-    chip->regs[0xF] = chip->regs[x] > chip->regs[y] ? 1 : 0;
+  }
+  case 0x5: {
+    uint8_t vf = chip->regs[x] >= chip->regs[y] ? 1 : 0;
     chip->regs[x] -= chip->regs[y];
+    chip->regs[0xF] = vf;
     break;
-  case 0x6:
-    chip->regs[0xF] = chip->regs[x] & 0x1;
+  }
+  case 0x6: {
+    chip->regs[x] = chip->regs[y];
+    uint8_t vf = chip->regs[x] & 0x1;
     chip->regs[x] >>= 1;
+    chip->regs[0xF] = vf;
     break;
-  case 0x7:
-    chip->regs[0xF] = chip->regs[y] > chip->regs[x] ? 1 : 0;
+  }
+  case 0x7: {
+    uint8_t vf = chip->regs[y] >= chip->regs[x] ? 1 : 0;
     chip->regs[x] = chip->regs[y] - chip->regs[x];
+    chip->regs[0xF] = vf;
     break;
-  case 0xE:
-    chip->regs[0xF] = (chip->regs[x] >> 7) & 0x1;
+  }
+  case 0xE: {
+    chip->regs[x] = chip->regs[y];
+    uint8_t vf = (chip->regs[x] >> 7) & 0x1;
     chip->regs[x] <<= 1;
+    chip->regs[0xF] = vf;
     break;
+  }
   default:
     break;
   }
@@ -242,37 +257,34 @@ static void op_rnd(CHIP8 chip) {
 }
 
 static void op_display(CHIP8 chip) {
-  uint8_t vx = chip->regs[(uint8_t)(chip->opcode >> 8) & 0x000F];
-  uint8_t vy = chip->regs[(uint8_t)(chip->opcode >> 4) & 0x000F];
-  uint8_t rows = (uint8_t)(chip->opcode & 0x000F);
-  /* printf("Display: X=%04X Y=%04X I=%04X n=%d\n", vx, vy, chip->index, rows);
-   */
-  vx &= 63;
-  vy &= 31;
+  uint8_t vx = chip->regs[(uint8_t)(chip->opcode >> 8) & 0x000F] & 63;
+  uint8_t vy = chip->regs[(uint8_t)(chip->opcode >> 4) & 0x000F] & 31;
+  uint16_t posx = 0, posy = 0, rows = chip->opcode & 0x000F;
+  uint8_t sprite_data, pixel_i;
+
   chip->regs[0xF] = 0;
 
-  /* printf("Display: X=%04X Y=%04X I=%04X n=%d\n", vx, vy, chip->index, rows);
-   */
-  uint8_t pixel, i, j;
-  uint16_t posx = 0, posy = 0;
-  for (j = 0; j < rows; j++) {
-    pixel = chip->mem[chip->index + (uint16_t)j];
-    /* printf("Display: mem addr=%04X val=%08b\n", chip->index + (uint16_t) j,
-     * pixel); */
-    posy = vy + j;
-    posy &= 31;
-    for (i = 0; i < 8; i++) {
-      if (pixel & 0x80) {
-        posx = vx + i;
-        posx &= 63;
-        if (chip->vram[posy * 64 + posx] == 1)
+  for (uint16_t row = 0; row < rows; row++) {
+    sprite_data = chip->mem[chip->index + row];
+
+    posy = vy + row;
+
+    if (posy > 31) {
+      continue;
+    }
+
+    for (pixel_i = 0; pixel_i < SPRITE_WIDTH; pixel_i++) {
+      posx = vx + pixel_i;
+      if (posx > 63) {
+        continue;
+      }
+      if (sprite_data & 0x80) {
+        if (chip->vram[posy * 64 + posx])
           chip->regs[0xF] = 1;
         chip->vram[posy * 64 + posx] ^= 1;
-        /* printf("POS: (%d,%d) V=%d\n", posx, posy, chip->vram[posy * 64 +
-         * posx]); */
       }
 
-      pixel <<= 1;
+      sprite_data <<= 1;
     }
   }
 }
@@ -303,9 +315,7 @@ static void op_waitkey(CHIP8 chip) {
   if (chip->input) {
     uint8_t vx = (chip->opcode & 0x0F00) >> 8;
     chip->regs[vx] = chip->input_key;
-    /* printf("%d %d\n", vx, chip->input_key); */
   } else {
-    /* printf("%016b %d\n", chip->input, chip->input_key); */
     chip->pc -= 2;
   }
 }
@@ -341,7 +351,7 @@ static void op_ldix(CHIP8 chip) {
   uint8_t x = ((chip->opcode & 0x0F00) >> 8) & 0xF;
 
   for (int i = 0; i <= x; i++) {
-    chip->mem[chip->index + i] = chip->regs[i];
+    chip->mem[chip->index++] = chip->regs[i];
   }
 }
 
@@ -349,7 +359,7 @@ static void op_ldxi(CHIP8 chip) {
   uint8_t x = ((chip->opcode & 0x0F00) >> 8) & 0xF;
 
   for (int i = 0; i <= x; i++) {
-    chip->regs[i] = chip->mem[chip->index + i];
+    chip->regs[i] = chip->mem[chip->index++];
   }
 }
 

@@ -19,7 +19,9 @@ struct media {
   Color spr;
 };
 
-MEDIA media_init(unsigned char *bg, unsigned char *spr) {
+static Color media_map_color(MediaColor mc);
+
+MEDIA media_init(MediaConfig config) {
   MEDIA media = malloc(sizeof(struct media));
 
   if (media == NULL) {
@@ -39,11 +41,15 @@ MEDIA media_init(unsigned char *bg, unsigned char *spr) {
 
   media->ihandler_count = 0;
   media->show_fps = false;
-  media->bg = (Color){bg[0], bg[1], bg[2], bg[3]};
-  media->spr = (Color){spr[0], spr[1], spr[2], spr[3]};
+  media->bg = media_map_color(config.background_color);
+  media->spr = media_map_color(config.foreground_color);
   /* media->sound = LoadSound("beep.wav"); */
 
   return media;
+}
+
+static Color media_map_color(MediaColor mc) {
+  return (Color){mc.r, mc.g, mc.b, 255};
 }
 
 bool media_is_active(MEDIA media) { return !WindowShouldClose(); }

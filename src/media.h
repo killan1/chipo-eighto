@@ -15,7 +15,18 @@ typedef struct InputHandler {
   void (*handle)(struct InputHandler *);
 } InputHandler;
 
-MEDIA media_init(unsigned char *bg, unsigned char *spr);
+typedef struct {
+  unsigned char r : 8;
+  unsigned char g : 8;
+  unsigned char b : 8;
+} MediaColor;
+
+typedef struct {
+  MediaColor background_color;
+  MediaColor foreground_color;
+} MediaConfig;
+
+MEDIA media_init(MediaConfig);
 bool media_is_active(MEDIA);
 void media_update_screen(MEDIA, uint8_t *);
 void media_frame_start(MEDIA);

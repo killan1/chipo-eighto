@@ -24,7 +24,7 @@ void chip_handler(InputHandler *h) {
 }
 
 void sys_handler(InputHandler *h) {
-  SYS sys = h->ctx;
+  SYS *sys = h->ctx;
 
   switch (h->alt) {
   case INCREMENT_CHIP_FREQ:
@@ -50,13 +50,14 @@ int main(int argc, char **argv) {
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
-  SYS sys = sys_init();
+  SYS *sys = sys_init();
   CHIP8 chip = chip_init();
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MEDIA media = media_init((unsigned char[]){0, 0, 0, 255},
-                           (unsigned char[]){0, 238, 0, 255});
+  MediaConfig mconfig = {.background_color = (MediaColor){0, 0, 0},
+                         .foreground_color = (MediaColor){0, 238, 0}};
+  MEDIA media = media_init(mconfig);
 
   for (uint8_t i = 0; i < 16; i++) {
     InputHandler dh = {.keycode = input_keys[i],

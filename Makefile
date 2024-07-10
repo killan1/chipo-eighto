@@ -6,7 +6,7 @@ chipo8o: $(objects)
 
 chipo-eighto.o: chipo-eighto.c 
 chip.o: chip.h
-media.o: media.h sys.h
+media.o: media.h
 utils.o: utils.h
 sys.o: sys.h
 

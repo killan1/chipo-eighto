@@ -55,8 +55,8 @@ int main(int argc, char **argv) {
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MediaConfig mconfig = {.background_color = (MediaColor){0, 0, 0},
-                         .foreground_color = (MediaColor){0, 238, 0}};
+  MediaConfig mconfig = {.background_color = (MediaColor){0, 0, 0, 255},
+                         .foreground_color = (MediaColor){0, 238, 0, 255}};
   MEDIA media = media_init(mconfig);
 
   for (uint8_t i = 0; i < 16; i++) {

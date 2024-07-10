@@ -15,8 +15,8 @@ struct media {
   InputHandler *ihandlers;
   uint16_t ihandler_count;
   bool show_fps;
-  Color bg;
-  Color spr;
+  Color bg_color;
+  Color fg_color;
 };
 
 static Color media_map_color(MediaColor mc);
@@ -41,15 +41,15 @@ MEDIA media_init(MediaConfig config) {
 
   media->ihandler_count = 0;
   media->show_fps = false;
-  media->bg = media_map_color(config.background_color);
-  media->spr = media_map_color(config.foreground_color);
+  media->bg_color = media_map_color(config.background_color);
+  media->fg_color = media_map_color(config.foreground_color);
   /* media->sound = LoadSound("beep.wav"); */
 
   return media;
 }
 
 static Color media_map_color(MediaColor mc) {
-  return (Color){mc.r, mc.g, mc.b, 255};
+  return (Color){mc.r, mc.g, mc.b, mc.a};
 }
 
 bool media_is_active(MEDIA media) { return !WindowShouldClose(); }
@@ -61,13 +61,14 @@ void media_update_screen(MEDIA media, uint8_t *vram) {
   for (x = 0; x < SCREEN_WIDTH; x++) {
     for (y = 0; y < SCREEN_HEIGHT; y++)
       if (vram[y * SCREEN_WIDTH + x])
-        DrawRectangle(x * SCALING, y * SCALING, SCALING, SCALING, media->spr);
+        DrawRectangle(x * SCALING, y * SCALING, SCALING, SCALING,
+                      media->fg_color);
   }
 }
 
 void media_frame_start(MEDIA media) {
   BeginDrawing();
-  ClearBackground(media->bg);
+  ClearBackground(media->bg_color);
 }
 
 void media_frame_end(MEDIA media) {

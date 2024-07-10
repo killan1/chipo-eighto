@@ -19,6 +19,7 @@ typedef struct {
   unsigned char r : 8;
   unsigned char g : 8;
   unsigned char b : 8;
+  unsigned char a : 8;
 } MediaColor;
 
 typedef struct {

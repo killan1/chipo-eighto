@@ -34,6 +34,7 @@ void media_frame_start(MEDIA);
 void media_frame_end(MEDIA);
 void media_destroy(MEDIA);
 void media_play_sound(MEDIA);
+void media_pause_sound(MEDIA);
 void media_read_input(MEDIA);
 void media_register_input_handler(MEDIA, InputHandler);
 void media_toggle_fps(MEDIA);

@@ -7,7 +7,7 @@ chipo8o: $(objects)
 chipo-eighto.o: chipo-eighto.c 
 chip.o: chip.h
 media.o: media.h
-utils.o: utils.h
+utils.o: utils.h chip.h sys.h media.h
 sys.o: sys.h
 
 .PHONY: clean

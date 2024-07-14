@@ -93,12 +93,12 @@ void media_update_screen(MEDIA media, uint8_t *vram) {
   }
 }
 
-void media_frame_start(MEDIA media) {
+void media_start_drawing(MEDIA media) {
   BeginDrawing();
   ClearBackground(media->bg_color);
 }
 
-void media_frame_end(MEDIA media) {
+void media_stop_drawing(MEDIA media) {
   if (media->show_fps)
     DrawFPS(10, 10);
   EndDrawing();

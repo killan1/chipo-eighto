@@ -30,8 +30,8 @@ typedef struct {
 MEDIA media_init(MediaConfig);
 bool media_is_active(MEDIA);
 void media_update_screen(MEDIA, uint8_t *);
-void media_frame_start(MEDIA);
-void media_frame_end(MEDIA);
+void media_start_drawing(MEDIA);
+void media_stop_drawing(MEDIA);
 void media_destroy(MEDIA);
 void media_play_sound(MEDIA);
 void media_pause_sound(MEDIA);

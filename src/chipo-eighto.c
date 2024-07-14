@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
     if (chip_is_sound_timer_active(chip)) {
       media_play_sound(media);
     } else {
-			media_pause_sound(media);
-		}
+      media_pause_sound(media);
+    }
 
     chip_update_timers(chip);
     media_frame_end(media);

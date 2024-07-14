@@ -1,9 +1,9 @@
 #include "media.h"
 #include "raylib.h"
 #include "utils.h"
-#include <stdlib.h>
 #include <limits.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
@@ -13,29 +13,9 @@
 #define MAX_INPUT_HANDLERS 100
 #define MAX_SAMPLES 512
 #define MAX_SAMPLES_PER_UPDATE 4096
+#define AUDIO_FREQUENCY 440.0f
 
-float frequency = 440.0f;
-float idx = 0.0f;
-void AudioInputCallback(void *buffer, unsigned int frames)
-{
-		float incr = frequency/44100.0f;
-
-    short *d = (short *)buffer;
-
-    for (unsigned int i = 0; i < frames; i++)
-    {
-			float v = sinf(2 * PI * idx);
-			if (v == 0) {
-				printf("%g %g %d\n", v, idx, d[i]);
-				d[i] = 0;
-			}
-			else
-				d[i] = v > 0 ? SHRT_MAX : SHRT_MIN;
-
-			idx+= incr;
-			if (idx > 1.0f) idx -= 1.0f;
-    }
-}
+static float idx = 0.0f;
 
 struct media {
   InputHandler *ihandlers;
@@ -43,10 +23,11 @@ struct media {
   bool show_fps;
   Color bg_color;
   Color fg_color;
-	AudioStream stream;
+  AudioStream stream;
 };
 
 static Color media_map_color(MediaColor mc);
+static void media_audio_input_callback(void *buffer, unsigned int frames);
 
 MEDIA media_init(MediaConfig config) {
   MEDIA media = malloc(sizeof(struct media));
@@ -71,15 +52,27 @@ MEDIA media_init(MediaConfig config) {
   media->bg_color = media_map_color(config.background_color);
   media->fg_color = media_map_color(config.foreground_color);
 
-	InitAudioDevice();
+  InitAudioDevice();
   SetAudioStreamBufferSizeDefault(MAX_SAMPLES_PER_UPDATE);
 
   media->stream = LoadAudioStream(44100, 16, 1);
 
-	SetAudioStreamCallback(media->stream, AudioInputCallback);
-	PlayAudioStream(media->stream);
+  SetAudioStreamCallback(media->stream, media_audio_input_callback);
+  PlayAudioStream(media->stream);
 
   return media;
+}
+
+static void media_audio_input_callback(void *buffer, unsigned int frames) {
+  float incr = AUDIO_FREQUENCY / 44100.0f;
+  short *d = (short *)buffer;
+
+  for (unsigned int i = 0; i < frames; i++) {
+    d[i] = sinf(2 * PI * idx) > 0 ? SHRT_MAX : SHRT_MIN;
+
+    if ((idx += incr) > 1.0f)
+      idx -= 1.0f;
+  }
 }
 
 static Color media_map_color(MediaColor mc) {
@@ -112,8 +105,8 @@ void media_frame_end(MEDIA media) {
 }
 
 void media_destroy(MEDIA media) {
-	UnloadAudioStream(media->stream);
-	CloseAudioDevice();
+  UnloadAudioStream(media->stream);
+  CloseAudioDevice();
   CloseWindow();
 }
 
@@ -152,11 +145,11 @@ void media_register_input_handler(MEDIA media, InputHandler handler) {
 }
 
 void media_play_sound(MEDIA media) {
-	if (!IsAudioStreamPlaying(media->stream))
-		PlayAudioStream(media->stream);
+  if (!IsAudioStreamPlaying(media->stream))
+    PlayAudioStream(media->stream);
 }
 
 void media_pause_sound(MEDIA media) {
-	if (IsAudioStreamPlaying(media->stream))
-		PauseAudioStream(media->stream);
+  if (IsAudioStreamPlaying(media->stream))
+    PauseAudioStream(media->stream);
 }

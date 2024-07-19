@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct Config {
   MediaColor background;
@@ -15,9 +16,33 @@ void parse_color(char *key, char *value, void *data) {
   if (value == NULL)
     terminate("Wrong value for color arg");
 
-  printf("parse_color key=%s value=%s\n", key, value);
-  /* Config *conf = (Config *) data; */
-  /* conf->background = (MediaColor){0,0,0,255}; */
+  MediaColor color;
+  int p = 0;
+  char *end;
+  for (;;) {
+    const long i = strtol(value, &end, 10);
+    if (value == end)
+      break;
+    while (*end == ',')
+      end++;
+    value = end;
+    if (p == 0)
+      color.r = i;
+    if (p == 1)
+      color.g = i;
+    if (p == 2)
+      color.b = i;
+    if (p == 3)
+      color.a = i;
+    p++;
+  }
+  Config *conf = (Config *)data;
+  if (!strncmp(key, "bg", 2)) {
+    conf->background = color;
+  }
+  if (!strncmp(key, "fg", 2)) {
+    conf->foreground = color;
+  }
 }
 
 int main(int argc, char **argv) {
@@ -34,8 +59,8 @@ int main(int argc, char **argv) {
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MediaConfig mconfig = {.background_color = (MediaColor){0, 0, 0, 255},
-                         .foreground_color = (MediaColor){0, 238, 0, 255}};
+  MediaConfig mconfig = {.background_color = config->background,
+                         .foreground_color = config->foreground};
   MEDIA media = media_init(mconfig);
 
   register_input_handlers(media, sys, chip);

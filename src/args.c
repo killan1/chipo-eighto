@@ -23,8 +23,7 @@ void parse_args(ArgParseOption *opts, int optc, int argc, char **argv,
 
   while (argc--) {
     carg = *argv;
-    arg_opt = get_arg_type(carg);
-    carg += arg_opt;
+    carg += arg_opt = get_arg_type(carg);
     has_eq_char = false;
 
     if (arg_opt != ARG_NO_OPTION) {

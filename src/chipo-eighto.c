@@ -1,3 +1,4 @@
+#include "args.h"
 #include "chip.h"
 #include "media.h"
 #include "sys.h"
@@ -5,7 +6,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct Config {
+  MediaColor background;
+  MediaColor foreground;
+} Config;
+
+void parse_color(char *key, char *value, void *data) {
+  if (value == NULL)
+    terminate("Wrong value for color arg");
+
+  printf("parse_color key=%s value=%s\n", key, value);
+  /* Config *conf = (Config *) data; */
+  /* conf->background = (MediaColor){0,0,0,255}; */
+}
+
 int main(int argc, char **argv) {
+  Config *config = malloc(sizeof(Config));
+  ArgParseOption options[] = {
+      (ArgParseOption){.str = "bg", .ch = 'b', .parse = &parse_color},
+      (ArgParseOption){.str = "fg", .ch = 'f', .parse = &parse_color}};
+  parse_args(options, 2, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 

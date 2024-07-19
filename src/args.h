@@ -1,6 +1,7 @@
 #ifndef ARGS_H
 #define ARGS_H
 
+typedef enum { ARG_NO_OPTION, ARG_SHRT_OPTION, ARG_LONG_OPTION } ArgOption;
 typedef struct {
   char *str;
   char ch;

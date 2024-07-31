@@ -25,6 +25,8 @@ typedef struct {
 typedef struct {
   MediaColor background_color;
   MediaColor foreground_color;
+  uint16_t win_height;
+  uint16_t win_width;
 } MediaConfig;
 
 MEDIA media_init(MediaConfig);

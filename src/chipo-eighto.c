@@ -10,6 +10,8 @@
 typedef struct Config {
   MediaColor background;
   MediaColor foreground;
+  uint16_t win_height;
+  uint16_t win_width;
 } Config;
 
 void parse_color(char *key, char *value, void *data) {
@@ -45,12 +47,30 @@ void parse_color(char *key, char *value, void *data) {
   }
 }
 
+void parse_window_size(char *key, char *value, void *data) {
+  if (value == NULL)
+    terminate("Wrong number value");
+
+  char *end;
+  size_t val = strtol(value, &end, 10);
+  Config *conf = (Config *)data;
+  if (!strncmp(key, "width", 5)) {
+    conf->win_width = val;
+  }
+  if (!strncmp(key, "height", 6)) {
+    conf->win_height = val;
+  }
+}
+
 int main(int argc, char **argv) {
   Config *config = malloc(sizeof(Config));
   ArgParseOption options[] = {
       (ArgParseOption){.str = "bg", .ch = 'b', .parse = &parse_color},
-      (ArgParseOption){.str = "fg", .ch = 'f', .parse = &parse_color}};
-  parse_args(options, 2, argc, argv, config);
+      (ArgParseOption){.str = "fg", .ch = 'f', .parse = &parse_color},
+      (ArgParseOption){.str = "width", .ch = 'w', .parse = &parse_window_size},
+      (ArgParseOption){
+          .str = "height", .ch = 'h', .parse = &parse_window_size}};
+  parse_args(options, 4, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
@@ -60,7 +80,9 @@ int main(int argc, char **argv) {
   free(rd.data);
 
   MediaConfig mconfig = {.background_color = config->background,
-                         .foreground_color = config->foreground};
+                         .foreground_color = config->foreground,
+                         .win_height = config->win_height,
+                         .win_width = config->win_width};
   MEDIA media = media_init(mconfig);
 
   register_input_handlers(media, sys, chip);

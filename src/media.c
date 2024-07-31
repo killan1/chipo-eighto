@@ -36,7 +36,7 @@ MEDIA media_init(MediaConfig config) {
     terminate("Failed to allocate memory");
   }
 
-  InitWindow(SCREEN_WIDTH * SCALING, SCREEN_HEIGHT * SCALING, "Chipo EIGHTo");
+  InitWindow(config.win_width, config.win_height, "Chipo EIGHTo");
 
   SetTargetFPS(TARGET_FPS);
 

@@ -1,4 +1,6 @@
+#include "args.h"
 #include "chip.h"
+#include "config.h"
 #include "media.h"
 #include "sys.h"
 #include "utils.h"
@@ -6,6 +8,35 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
+  Config *config = config_init();
+
+  ArgParserOption options[] = {
+      (ArgParserOption){.str = "help",
+                        .ch = 'h',
+                        .parse = &display_help_message,
+                        .set = NULL},
+      (ArgParserOption){.str = "bg",
+                        .ch = 'b',
+                        .parse = &parse_color_arg_value,
+                        .set = &config_set_background},
+      (ArgParserOption){.str = "fg",
+                        .ch = 'f',
+                        .parse = &parse_color_arg_value,
+                        .set = &config_set_foreground},
+      (ArgParserOption){.str = "width",
+                        .ch = 'w',
+                        .parse = &parse_screen_arg_value,
+                        .set = &config_set_screen_width},
+      (ArgParserOption){.str = "height",
+                        .ch = 'h',
+                        .parse = &parse_screen_arg_value,
+                        .set = &config_set_screen_heigth},
+      (ArgParserOption){.str = "scaling",
+                        .ch = 's',
+                        .parse = &parse_screen_arg_value,
+                        .set = &config_set_screen_scaling}};
+
+  parse_args(options, 6, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
@@ -14,8 +45,11 @@ int main(int argc, char **argv) {
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
-  MediaConfig mconfig = {.background_color = (MediaColor){0, 0, 0, 255},
-                         .foreground_color = (MediaColor){0, 238, 0, 255}};
+  MediaConfig mconfig = {.background_color = config->background,
+                         .foreground_color = config->foreground,
+                         .screen_height = config->screen_height,
+                         .screen_width = config->screen_width,
+                         .screen_scaling = config->screen_scaling};
   MEDIA media = media_init(mconfig);
 
   register_input_handlers(media, sys, chip);
@@ -44,6 +78,8 @@ int main(int argc, char **argv) {
 
   chip_destroy(chip);
   media_destroy(media);
+  sys_destroy(sys);
+  free(config);
 
   return 0;
 }

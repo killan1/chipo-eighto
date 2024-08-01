@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct media *MEDIA;
 typedef enum { UP, DOWN, PRESSED, RELEASED } MediaBtnEvent;
@@ -25,6 +26,9 @@ typedef struct {
 typedef struct {
   MediaColor background_color;
   MediaColor foreground_color;
+  size_t screen_height;
+  size_t screen_width;
+  size_t screen_scaling;
 } MediaConfig;
 
 MEDIA media_init(MediaConfig);

@@ -7,7 +7,6 @@
 
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
-#define SCALING 10
 #define CHIP_KEYBOARD_SIZE 16
 #define TARGET_FPS 60
 #define MAX_INPUT_HANDLERS 100
@@ -23,6 +22,9 @@ struct media {
   bool show_fps;
   Color bg_color;
   Color fg_color;
+  size_t screen_width;
+  size_t screen_height;
+  size_t screen_scaling;
   AudioStream stream;
 };
 
@@ -32,13 +34,8 @@ static void media_audio_input_callback(void *buffer, unsigned int frames);
 MEDIA media_init(MediaConfig config) {
   MEDIA media = malloc(sizeof(struct media));
 
-  if (media == NULL) {
+  if (media == NULL)
     terminate("Failed to allocate memory");
-  }
-
-  InitWindow(SCREEN_WIDTH * SCALING, SCREEN_HEIGHT * SCALING, "Chipo EIGHTo");
-
-  SetTargetFPS(TARGET_FPS);
 
   media->ihandlers = malloc(MAX_INPUT_HANDLERS * sizeof(InputHandler));
 
@@ -47,10 +44,17 @@ MEDIA media_init(MediaConfig config) {
     terminate("Failed to allocate memory");
   }
 
+  media->screen_width = config.screen_width;
+  media->screen_height = config.screen_height;
+  media->screen_scaling = config.screen_scaling;
   media->ihandler_count = 0;
   media->show_fps = false;
   media->bg_color = media_map_color(config.background_color);
   media->fg_color = media_map_color(config.foreground_color);
+
+  InitWindow(media->screen_width * media->screen_scaling,
+             media->screen_height * media->screen_scaling, "Chipo EIGHTo");
+  SetTargetFPS(TARGET_FPS);
 
   InitAudioDevice();
   SetAudioStreamBufferSizeDefault(MAX_SAMPLES_PER_UPDATE);
@@ -84,11 +88,12 @@ bool media_is_active(MEDIA media) { return !WindowShouldClose(); }
 void media_toggle_fps(MEDIA media) { media->show_fps = !media->show_fps; }
 
 void media_update_screen(MEDIA media, uint8_t *vram) {
-  uint16_t x, y;
+  size_t x, y;
   for (x = 0; x < SCREEN_WIDTH; x++) {
     for (y = 0; y < SCREEN_HEIGHT; y++)
       if (vram[y * SCREEN_WIDTH + x])
-        DrawRectangle(x * SCALING, y * SCALING, SCALING, SCALING,
+        DrawRectangle(x * media->screen_scaling, y * media->screen_scaling,
+                      media->screen_scaling, media->screen_scaling,
                       media->fg_color);
   }
 }
@@ -108,6 +113,8 @@ void media_destroy(MEDIA media) {
   UnloadAudioStream(media->stream);
   CloseAudioDevice();
   CloseWindow();
+  free(media->ihandlers);
+  free(media);
 }
 
 void media_read_input(MEDIA media) {

@@ -113,3 +113,54 @@ void register_input_handlers(MEDIA media, SYS *sys, CHIP8 chip) {
                       .handle = &media_handler};
   media_register_input_handler(media, fps);
 }
+
+void *parse_color_arg_value(char *key, char *value) {
+  if (value == NULL)
+    terminate("Wrong value for color arg");
+
+  MediaColor *color = malloc(sizeof(MediaColor));
+  int p = 0;
+  char *end;
+  for (;;) {
+    const long i = strtol(value, &end, 10);
+    if (value == end)
+      break;
+    while (*end == ',')
+      end++;
+    value = end;
+    if (p == 0)
+      color->r = i;
+    if (p == 1)
+      color->g = i;
+    if (p == 2)
+      color->b = i;
+    if (p == 3)
+      color->a = i;
+    p++;
+  }
+
+  return (void *)color;
+}
+
+void *parse_screen_arg_value(char *key, char *value) {
+  if (value == NULL)
+    terminate("Wrong window size value");
+
+  char *end;
+  size_t *val = malloc(sizeof(size_t));
+  *val = strtol(value, &end, 10);
+
+  return (void *)val;
+}
+
+void *display_help_message(char *key, char *value) {
+  printf("Usage: chipo8o [FILE] [OPTION]...\n\
+Available options:\n\
+  -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
+  -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
+  -w, --width[=NUM]         screen width in pixels, Default: 64\n\
+  -h, --height[=NUM]        screen height in pixels. Default: 32\n\
+  -s, --scaling[=NUM]       screen scaling factor. Default: 10\n\
+  -h, --help                display this help and exit\n");
+  exit(0);
+}

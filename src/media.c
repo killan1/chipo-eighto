@@ -35,9 +35,8 @@ static void media_audio_input_callback(void *buffer, unsigned int frames);
 MEDIA media_init(MediaConfig config) {
   MEDIA media = malloc(sizeof(struct media));
 
-  if (media == NULL) {
+  if (media == NULL)
     terminate("Failed to allocate memory");
-  }
 
   media->ihandlers = malloc(MAX_INPUT_HANDLERS * sizeof(InputHandler));
 

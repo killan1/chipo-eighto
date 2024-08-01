@@ -15,7 +15,7 @@ static ArgOption get_arg_type(char *arg) {
   return arg_opt;
 }
 
-void parse_args(ArgParseOption *opts, int optc, int argc, char **argv,
+void parse_args(ArgParserOption *opts, int optc, int argc, char **argv,
                 void *dist) {
   char *carg, *narg, *optp, *optv;
   ArgOption arg_opt;

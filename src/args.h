@@ -7,9 +7,9 @@ typedef struct {
   char ch;
   void *(*parse)(char *, char *);
   void (*set)(void *, void *);
-} ArgParseOption;
+} ArgParserOption;
 
-void parse_args(ArgParseOption *options, int opts_count, int argc, char **argv,
+void parse_args(ArgParserOption *options, int opts_count, int argc, char **argv,
                 void *dist);
 
 #endif

@@ -18,5 +18,7 @@ typedef struct {
 RomData read_rom_file(char *);
 void terminate(const char *msg);
 void register_input_handlers(MEDIA, SYS *, CHIP8);
+void *parse_color_arg_value(char *, char *);
+void *parse_screen_arg_value(char *, char *);
 
 #endif

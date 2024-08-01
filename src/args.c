@@ -57,8 +57,11 @@ void parse_args(ArgParseOption *opts, int optc, int argc, char **argv,
           if (ch_idx > 1)
             optv = NULL;
           for (int i = 0; i < optc; i++) {
-            if (c == opts[i].ch)
-              opts[i].parse(opts[i].str, optv, dist);
+            if (c == opts[i].ch) {
+              void *val = opts[i].parse(opts[i].str, optv);
+              if (opts[i].set != NULL)
+                opts[i].set(val, dist);
+            }
           }
           ch_idx--;
         }
@@ -67,8 +70,11 @@ void parse_args(ArgParseOption *opts, int optc, int argc, char **argv,
       case ARG_LONG_OPTION:
         *carg = '\0';
         for (int i = 0; i < optc; i++) {
-          if (strncmp(opts[i].str, optp, strlen(optp)) == 0)
-            opts[i].parse(optp, optv, dist);
+          if (strncmp(opts[i].str, optp, strlen(optp)) == 0) {
+            void *val = opts[i].parse(optp, optv);
+            if (opts[i].set != NULL)
+              opts[i].set(val, dist);
+          }
         }
         break;
       default:

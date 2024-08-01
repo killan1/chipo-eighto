@@ -10,15 +10,16 @@
 typedef struct Config {
   MediaColor background;
   MediaColor foreground;
-  uint16_t win_height;
-  uint16_t win_width;
+  size_t screen_height;
+  size_t screen_width;
+  size_t screen_scaling;
 } Config;
 
-void parse_color(char *key, char *value, void *data) {
+void *parse_color(char *key, char *value) {
   if (value == NULL)
     terminate("Wrong value for color arg");
 
-  MediaColor color;
+  MediaColor *color = malloc(sizeof(MediaColor));
   int p = 0;
   char *end;
   for (;;) {
@@ -29,48 +30,87 @@ void parse_color(char *key, char *value, void *data) {
       end++;
     value = end;
     if (p == 0)
-      color.r = i;
+      color->r = i;
     if (p == 1)
-      color.g = i;
+      color->g = i;
     if (p == 2)
-      color.b = i;
+      color->b = i;
     if (p == 3)
-      color.a = i;
+      color->a = i;
     p++;
   }
-  Config *conf = (Config *)data;
-  if (!strncmp(key, "bg", 2)) {
-    conf->background = color;
-  }
-  if (!strncmp(key, "fg", 2)) {
-    conf->foreground = color;
-  }
+
+  return (void *)color;
 }
 
-void parse_window_size(char *key, char *value, void *data) {
+void *parse_window_size(char *key, char *value) {
   if (value == NULL)
-    terminate("Wrong number value");
+    terminate("Wrong window size value");
 
   char *end;
-  size_t val = strtol(value, &end, 10);
-  Config *conf = (Config *)data;
-  if (!strncmp(key, "width", 5)) {
-    conf->win_width = val;
-  }
-  if (!strncmp(key, "height", 6)) {
-    conf->win_height = val;
-  }
+  size_t *val = malloc(sizeof(size_t));
+  *val = strtol(value, &end, 10);
+
+  return (void *)val;
+}
+
+static void cleanup_parse_value(void *valp) { free(valp); }
+
+void set_config_bg(void *valp, void *confp) {
+  Config *conf = (Config *)confp;
+  conf->background = *(MediaColor *)valp;
+  cleanup_parse_value(valp);
+}
+
+void set_config_fg(void *valp, void *confp) {
+  Config *conf = (Config *)confp;
+  conf->foreground = *(MediaColor *)valp;
+  cleanup_parse_value(valp);
+}
+
+void set_config_screen_width(void *valp, void *confp) {
+  Config *conf = (Config *)confp;
+  conf->screen_width = *(size_t *)valp;
+  cleanup_parse_value(valp);
+}
+
+void set_config_screen_heigth(void *valp, void *confp) {
+  Config *conf = (Config *)confp;
+  conf->screen_height = *(size_t *)valp;
+  cleanup_parse_value(valp);
+}
+
+void set_config_screen_scaling(void *valp, void *confp) {
+  Config *conf = (Config *)confp;
+  conf->screen_scaling = *(size_t *)valp;
+  cleanup_parse_value(valp);
 }
 
 int main(int argc, char **argv) {
   Config *config = malloc(sizeof(Config));
+  config->screen_width = 64;
+  config->screen_height = 32;
+  config->screen_scaling = 10;
+
   ArgParseOption options[] = {
-      (ArgParseOption){.str = "bg", .ch = 'b', .parse = &parse_color},
-      (ArgParseOption){.str = "fg", .ch = 'f', .parse = &parse_color},
-      (ArgParseOption){.str = "width", .ch = 'w', .parse = &parse_window_size},
       (ArgParseOption){
-          .str = "height", .ch = 'h', .parse = &parse_window_size}};
-  parse_args(options, 4, argc, argv, config);
+          .str = "bg", .ch = 'b', .parse = &parse_color, .set = &set_config_bg},
+      (ArgParseOption){
+          .str = "fg", .ch = 'f', .parse = &parse_color, .set = &set_config_fg},
+      (ArgParseOption){.str = "width",
+                       .ch = 'w',
+                       .parse = &parse_window_size,
+                       .set = &set_config_screen_width},
+      (ArgParseOption){.str = "height",
+                       .ch = 'h',
+                       .parse = &parse_window_size,
+                       .set = &set_config_screen_heigth},
+      (ArgParseOption){.str = "scaling",
+                       .ch = 's',
+                       .parse = &parse_window_size,
+                       .set = &set_config_screen_scaling}};
+
+  parse_args(options, 5, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
@@ -81,8 +121,9 @@ int main(int argc, char **argv) {
 
   MediaConfig mconfig = {.background_color = config->background,
                          .foreground_color = config->foreground,
-                         .win_height = config->win_height,
-                         .win_width = config->win_width};
+                         .screen_height = config->screen_height,
+                         .screen_width = config->screen_width,
+                         .screen_scaling = config->screen_scaling};
   MEDIA media = media_init(mconfig);
 
   register_input_handlers(media, sys, chip);

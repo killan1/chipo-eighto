@@ -10,9 +10,8 @@
 SYS *sys_init() {
   SYS *sys = malloc(sizeof(SYS));
 
-  if (sys == NULL) {
+  if (sys == NULL)
     terminate("Failed to allocate memory");
-  }
 
   sys->chip_cycles_left = FREQ_DEFAULT;
   sys->chip_freq = FREQ_DEFAULT;
@@ -37,3 +36,5 @@ void sys_dec_freq(SYS *sys) {
 bool sys_is_chip_active(SYS *sys) { return sys->chip_cycles_left-- > 0; }
 
 void sys_reset_cycles(SYS *sys) { sys->chip_cycles_left = sys->chip_freq; }
+
+void sys_destroy(SYS *sys) { free(sys); }

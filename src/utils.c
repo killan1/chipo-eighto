@@ -152,3 +152,15 @@ void *parse_screen_arg_value(char *key, char *value) {
 
   return (void *)val;
 }
+
+void *display_help_message(char *key, char *value) {
+  printf("Usage: chipo8o [FILE] [OPTION]...\n\
+Available options:\n\
+  -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
+  -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
+  -w, --width[=NUM]         screen width in pixels, Default: 64\n\
+  -h, --height[=NUM]        screen height in pixels. Default: 32\n\
+  -s, --scaling[=NUM]       screen scaling factor. Default: 10\n\
+  -h, --help                display this help and exit\n");
+  exit(0);
+}

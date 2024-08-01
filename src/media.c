@@ -7,7 +7,6 @@
 
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
-#define SCALING 10
 #define CHIP_KEYBOARD_SIZE 16
 #define TARGET_FPS 60
 #define MAX_INPUT_HANDLERS 100
@@ -114,6 +113,8 @@ void media_destroy(MEDIA media) {
   UnloadAudioStream(media->stream);
   CloseAudioDevice();
   CloseWindow();
+  free(media->ihandlers);
+  free(media);
 }
 
 void media_read_input(MEDIA media) {

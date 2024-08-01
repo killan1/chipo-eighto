@@ -6,8 +6,6 @@
 #define DEFAULT_SCREEN_HEIGHT 32
 #define DEFAULT_SCREEN_SCALING 10
 
-static void cleanup_parsed_value(void *valp) { free(valp); }
-
 Config *config_init() {
   Config *config = malloc(sizeof(Config));
 
@@ -26,29 +24,24 @@ Config *config_init() {
 void config_set_background(void *valp, void *confp) {
   Config *conf = (Config *)confp;
   conf->background = *(MediaColor *)valp;
-  cleanup_parsed_value(valp);
 }
 
 void config_set_foreground(void *valp, void *confp) {
   Config *conf = (Config *)confp;
   conf->foreground = *(MediaColor *)valp;
-  cleanup_parsed_value(valp);
 }
 
 void config_set_screen_width(void *valp, void *confp) {
   Config *conf = (Config *)confp;
   conf->screen_width = *(size_t *)valp;
-  cleanup_parsed_value(valp);
 }
 
 void config_set_screen_heigth(void *valp, void *confp) {
   Config *conf = (Config *)confp;
   conf->screen_height = *(size_t *)valp;
-  cleanup_parsed_value(valp);
 }
 
 void config_set_screen_scaling(void *valp, void *confp) {
   Config *conf = (Config *)confp;
   conf->screen_scaling = *(size_t *)valp;
-  cleanup_parsed_value(valp);
 }

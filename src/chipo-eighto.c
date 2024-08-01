@@ -11,6 +11,10 @@ int main(int argc, char **argv) {
   Config *config = config_init();
 
   ArgParserOption options[] = {
+      (ArgParserOption){.str = "help",
+                        .ch = 'h',
+                        .parse = &display_help_message,
+                        .set = NULL},
       (ArgParserOption){.str = "bg",
                         .ch = 'b',
                         .parse = &parse_color_arg_value,
@@ -32,7 +36,7 @@ int main(int argc, char **argv) {
                         .parse = &parse_screen_arg_value,
                         .set = &config_set_screen_scaling}};
 
-  parse_args(options, 5, argc, argv, config);
+  parse_args(options, 6, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
@@ -74,6 +78,8 @@ int main(int argc, char **argv) {
 
   chip_destroy(chip);
   media_destroy(media);
+  sys_destroy(sys);
+  free(config);
 
   return 0;
 }

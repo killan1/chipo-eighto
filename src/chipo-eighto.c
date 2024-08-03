@@ -22,19 +22,7 @@ int main(int argc, char **argv) {
       (ArgParserOption){.str = "fg",
                         .ch = 'f',
                         .parse = &parse_color_arg_value,
-                        .set = &config_set_foreground},
-      (ArgParserOption){.str = "width",
-                        .ch = 'w',
-                        .parse = &parse_screen_arg_value,
-                        .set = &config_set_screen_width},
-      (ArgParserOption){.str = "height",
-                        .ch = 'h',
-                        .parse = &parse_screen_arg_value,
-                        .set = &config_set_screen_heigth},
-      (ArgParserOption){.str = "scaling",
-                        .ch = 's',
-                        .parse = &parse_screen_arg_value,
-                        .set = &config_set_screen_scaling}};
+                        .set = &config_set_foreground}};
 
   parse_args(options, 6, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
@@ -46,10 +34,7 @@ int main(int argc, char **argv) {
   free(rd.data);
 
   MediaConfig mconfig = {.background_color = config->background,
-                         .foreground_color = config->foreground,
-                         .screen_height = config->screen_height,
-                         .screen_width = config->screen_width,
-                         .screen_scaling = config->screen_scaling};
+                         .foreground_color = config->foreground};
   MEDIA media = media_init(mconfig);
 
   register_input_handlers(media, sys, chip);

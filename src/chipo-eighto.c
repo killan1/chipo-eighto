@@ -22,14 +22,23 @@ int main(int argc, char **argv) {
       (ArgParserOption){.str = "fg",
                         .ch = 'f',
                         .parse = &parse_color_arg_value,
-                        .set = &config_set_foreground}};
+                        .set = &config_set_foreground},
+      (ArgParserOption){.str = "shift-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks},
+      (ArgParserOption){.str = "mem-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks}};
 
-  parse_args(options, 6, argc, argv, config);
+  parse_args(options, 5, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
   SYS *sys = sys_init();
-  CHIP8 chip = chip_init();
+  printf("%d\n", config->chip_quirks);
+  CHIP8 chip = chip_init((ChipConfig){.quirks = config->chip_quirks});
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 

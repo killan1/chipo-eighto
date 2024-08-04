@@ -21,13 +21,15 @@ struct chip8 {
 
   uint16_t opcode;
   void (*exec)(CHIP8);
+
+  uint8_t quirks;
 };
 
 static void fetch(CHIP8);
 static void decode(CHIP8);
 static void execute(CHIP8);
 
-CHIP8 chip_init() {
+CHIP8 chip_init(ChipConfig conf) {
   srand(time(NULL));
   CHIP8 chip = malloc(sizeof(struct chip8));
 
@@ -54,6 +56,7 @@ CHIP8 chip_init() {
   chip->sp = 0;
   chip->input = 0;
   chip->input_key = 0;
+  chip->quirks = conf.quirks;
 
   int8_t i;
   for (i = 0; i < 16; i++) {
@@ -227,9 +230,12 @@ static void opcode_8xy5(CHIP8 chip) {
 static void opcode_8xy6(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+  uint8_t vf;
 
-  chip->regs[x] = chip->regs[y];
-  uint8_t vf = chip->regs[x] & 0x1;
+  if ((chip->quirks & SHIFT_IGNORE_VY) == 0)
+    chip->regs[x] = chip->regs[y];
+
+  vf = chip->regs[x] & 0x1;
   chip->regs[x] >>= 1;
   chip->regs[0xF] = vf;
 }
@@ -246,9 +252,12 @@ static void opcode_8xy7(CHIP8 chip) {
 static void opcode_8xyE(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
+  uint8_t vf;
 
-  chip->regs[x] = chip->regs[y];
-  uint8_t vf = (chip->regs[x] >> 7) & 0x1;
+  if ((chip->quirks & SHIFT_IGNORE_VY) == 0)
+    chip->regs[x] = chip->regs[y];
+
+  vf = (chip->regs[x] >> 7) & 0x1;
   chip->regs[x] <<= 1;
   chip->regs[0xF] = vf;
 }
@@ -360,16 +369,20 @@ static void opcode_Fx33(CHIP8 chip) {
 static void opcode_Fx55(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
+  bool skip_index_modify = (chip->quirks & MEM_NOT_MODIFY_I) != 0;
   for (int i = 0; i <= x; i++) {
-    chip->mem[chip->index++] = chip->regs[i];
+    chip->mem[skip_index_modify ? chip->index + i : chip->index++] =
+        chip->regs[i];
   }
 }
 
 static void opcode_Fx65(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
+  bool skip_index_modify = (chip->quirks & MEM_NOT_MODIFY_I) != 0;
   for (int i = 0; i <= x; i++) {
-    chip->regs[i] = chip->mem[chip->index++];
+    chip->regs[i] =
+        chip->mem[skip_index_modify ? chip->index + i : chip->index++];
   }
 }
 

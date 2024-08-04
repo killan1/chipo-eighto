@@ -1,5 +1,7 @@
 #include "utils.h"
+#include "chip.h"
 #include <stdlib.h>
+#include <string.h>
 
 RomData read_rom_file(char *filename) {
   FILE *fp = fopen(filename, "rb");
@@ -36,7 +38,7 @@ RomData read_rom_file(char *filename) {
 }
 
 void terminate(const char *msg) {
-  printf("%s\n", msg);
+  printf("Error: %s\n", msg);
   exit(EXIT_FAILURE);
 }
 
@@ -142,11 +144,24 @@ void *parse_color_arg_value(char *key, char *value) {
   return (void *)color;
 }
 
+void *parse_chip_quirk_arg_value(char *key, char *value) {
+  uint8_t *val = malloc(sizeof(uint8_t));
+
+  if (strncmp(key, "shift-quirk", strlen(key)) == 0)
+    *val = SHIFT_IGNORE_VY;
+  if (strncmp(key, "mem-quirk", strlen(key)) == 0)
+    *val = MEM_NOT_MODIFY_I;
+
+  return (void *)val;
+}
+
 void *display_help_message(char *key, char *value) {
   printf("Usage: chipo8o [FILE] [OPTION]...\n\
 Available options:\n\
   -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
   -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
+      --shift-quirk         ignore VY register for 8XY6, 8XYE instructions and directly modify VX register.\n\
+      --mem-quirk           do not modify index register (I) for FX55, FX65 instructions.\n\
   -h, --help                display this help and exit\n");
   exit(0);
 }

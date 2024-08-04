@@ -10,9 +10,13 @@
 #define START_ADDRESS 0x0200
 #define SPRITE_WIDTH 8
 
+typedef enum { SHIFT_IGNORE_VY = 1, MEM_NOT_MODIFY_I = 2 } InstrQuirk;
 typedef struct chip8 *CHIP8;
+typedef struct ChipConfig {
+  uint8_t quirks;
+} ChipConfig;
 
-CHIP8 chip_init();
+CHIP8 chip_init(ChipConfig);
 void chip_destroy(CHIP8);
 void chip_run_cycle(CHIP8);
 void chip_update_timers(CHIP8);

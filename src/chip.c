@@ -190,7 +190,8 @@ static void opcode_8xy1(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] |= chip->regs[y];
-  chip->regs[0xF] = 0;
+  if ((chip->quirks & VF_RESET) == 0)
+    chip->regs[0xF] = 0;
 }
 
 static void opcode_8xy2(CHIP8 chip) {
@@ -198,7 +199,8 @@ static void opcode_8xy2(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] &= chip->regs[y];
-  chip->regs[0xF] = 0;
+  if ((chip->quirks & VF_RESET) == 0)
+    chip->regs[0xF] = 0;
 }
 
 static void opcode_8xy3(CHIP8 chip) {
@@ -206,7 +208,8 @@ static void opcode_8xy3(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] ^= chip->regs[y];
-  chip->regs[0xF] = 0;
+  if ((chip->quirks & VF_RESET) == 0)
+    chip->regs[0xF] = 0;
 }
 
 static void opcode_8xy4(CHIP8 chip) {
@@ -265,7 +268,12 @@ static void opcode_8xyE(CHIP8 chip) {
 static void opcode_Annn(CHIP8 chip) { chip->index = chip->opcode & 0xFFF; }
 
 static void opcode_Bnnn(CHIP8 chip) {
-  chip->pc = (chip->opcode & 0xFFF) + chip->regs[0x0];
+  uint8_t x = 0x0;
+
+  if ((chip->quirks & JUMP_USE_VX) != 0)
+    x = (uint8_t)(chip->opcode >> 8 & 0xF);
+
+  chip->pc = (chip->opcode & 0xFFF) + chip->regs[x];
 }
 
 static void opcode_Cxkk(CHIP8 chip) {
@@ -369,21 +377,21 @@ static void opcode_Fx33(CHIP8 chip) {
 static void opcode_Fx55(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
-  bool skip_index_modify = (chip->quirks & MEM_NOT_MODIFY_I) != 0;
-  for (int i = 0; i <= x; i++) {
-    chip->mem[skip_index_modify ? chip->index + i : chip->index++] =
-        chip->regs[i];
-  }
+  for (int i = 0; i <= x; i++)
+    chip->mem[chip->index + i] = chip->regs[i];
+
+  if ((chip->quirks & MEM_NOT_MODIFY_I) == 0)
+    chip->index += x + 1;
 }
 
 static void opcode_Fx65(CHIP8 chip) {
   uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
 
-  bool skip_index_modify = (chip->quirks & MEM_NOT_MODIFY_I) != 0;
-  for (int i = 0; i <= x; i++) {
-    chip->regs[i] =
-        chip->mem[skip_index_modify ? chip->index + i : chip->index++];
-  }
+  for (int i = 0; i <= x; i++)
+    chip->regs[i] = chip->mem[chip->index + i];
+
+  if ((chip->quirks & MEM_NOT_MODIFY_I) == 0)
+    chip->index += x + 1;
 }
 
 static void opcode_Fx1E(CHIP8 chip) {

@@ -38,7 +38,7 @@ RomData read_rom_file(char *filename) {
 }
 
 void terminate(const char *msg) {
-  printf("Error: %s\n", msg);
+  printf("%s\n", msg);
   exit(EXIT_FAILURE);
 }
 

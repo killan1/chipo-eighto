@@ -6,9 +6,20 @@
 #include <stdio.h>
 
 #define MEM_SIZE 0x1000
-#define VMEM_SIZE 0x0800
+#define CHIP_VRAM_SIZE 0x0800
+#define CHIP_SCREEN_WIDTH 64
+#define CHIP_SCREEN_HEIGHT 32
+#define SCHIP_VRAM_SIZE 0x2000
+#define SCHIP_SCREEN_WIDTH 128
+#define SCHIP_SCREEN_HEIGHT 64
 #define START_ADDRESS 0x0200
 #define SPRITE_WIDTH 8
+#define REGS_COUNT 16
+#ifndef SUPER_CHIP
+#define STACK_SIZE 12
+#else
+#define STACk_SIZE 16
+#endif
 
 typedef enum {
   SHIFT_IGNORE_VY = 1,

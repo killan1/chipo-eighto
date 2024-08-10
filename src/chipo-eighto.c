@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
   register_input_handlers(media, sys, chip);
 
-  uint8_t *vram = chip_get_vram_ref(chip);
+  /* uint8_t *vram = chip_get_vram_ref(chip); */
 
   while (media_is_active(media)) {
     while (sys_is_chip_active(sys)) {
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 
     media_start_drawing(media);
     media_read_input(media);
-    media_update_screen(media, vram);
+    media_update_screen(media, chip);
 
     if (chip_is_sound_timer_active(chip)) {
       media_play_sound(media);

@@ -5,22 +5,20 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define SUPER_CHIP
 #define MEM_SIZE 0x1000
-#define CHIP_VRAM_SIZE 0x0800
-#define CHIP_SCREEN_WIDTH 64
-#define CHIP_SCREEN_HEIGHT 32
 #define START_ADDRESS 0x0200
 #define REGS_COUNT 16
 #define SPRITE_SIZE 8
-
 #ifdef SUPER_CHIP
-#define SCHIP_SCREEN_WIDTH 128
-#define SCHIP_SCREEN_HEIGHT 64
-#define SCHIP_VRAM_SIZE 0x2000
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define VRAM_SIZE 0x2000
 #define WIDE_SPRITE_SIZE 16
 #define STACK_SIZE 16
 #else
+#define SCREEN_WIDTH 64
+#define SCREEN_HEIGHT 32
+#define VRAM_SIZE 0x0800
 #define STACK_SIZE 12
 #endif
 

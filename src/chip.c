@@ -49,12 +49,7 @@ CHIP8 chip_init(ChipConfig conf) {
     terminate("Failed to allocate memory");
   }
 
-  size_t vram_size;
-#ifdef SUPER_CHIP
-  vram_size = SCHIP_VRAM_SIZE;
-#else
-  vram_size = CHIP_VRAM_SIZE;
-#endif
+  size_t vram_size = VRAM_SIZE;
 
   chip->vram = calloc(vram_size, sizeof(uint8_t));
   if (chip->vram == NULL) {
@@ -63,14 +58,8 @@ CHIP8 chip_init(ChipConfig conf) {
   }
 
   chip->vram_size = vram_size;
-#ifdef SUPER_CHIP
-  chip->screen_width = SCHIP_SCREEN_WIDTH;
-  chip->screen_height = SCHIP_SCREEN_HEIGHT;
-  chip->hires_mode_enabled = false;
-#else
-  chip->screen_width = CHIP_SCREEN_WIDTH;
-  chip->screen_height = CHIP_SCREEN_HEIGHT;
-#endif
+  chip->screen_width = SCREEN_WIDTH;
+  chip->screen_height = SCREEN_HEIGHT;
   chip->pc = START_ADDRESS;
   chip->index = 0;
   chip->dt = 0;
@@ -79,6 +68,9 @@ CHIP8 chip_init(ChipConfig conf) {
   chip->input = 0;
   chip->input_key = 0;
   chip->quirks = conf.quirks;
+#ifdef SUPER_CHIP
+  chip->hires_mode_enabled = false;
+#endif
 
   uint8_t i;
   for (i = 0; i < REGS_COUNT; i++) {

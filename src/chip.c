@@ -492,12 +492,12 @@ static void opcode_00FB(CHIP8 chip) {
 }
 
 static void opcode_00FC(CHIP8 chip) {
-  int16_t pixels = chip->hires_mode_enabled ? 4 : 8;
+  uint16_t pixels = chip->hires_mode_enabled ? 4 : 8;
   uint16_t x, y;
   for (x = 0; x < chip->screen_width; x++)
     for (y = 0; y < chip->screen_height; y++) {
       chip->vram[y * chip->screen_width + x] =
-          x > chip->screen_width - pixels
+          x > chip->screen_width - 1 - pixels
               ? 0
               : chip->vram[y * chip->screen_width + x + pixels];
     }
@@ -539,7 +539,7 @@ static void opcode_Dxy0(CHIP8 chip) {
         continue;
       }
 
-      if (sprite_data & ((uint16_t)1 << (WIDE_SPRITE_SIZE - 1 - col))) {
+      if (sprite_data & 1 << (WIDE_SPRITE_SIZE - 1 - col)) {
         if (chip->vram[posy * screen_width + posx])
           chip->regs[0xF] = 1;
         chip->vram[posy * screen_width + posx] ^= 1;

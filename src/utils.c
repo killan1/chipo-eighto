@@ -1,5 +1,7 @@
 #include "utils.h"
+#include "chip.h"
 #include <stdlib.h>
+#include <string.h>
 
 RomData read_rom_file(char *filename) {
   FILE *fp = fopen(filename, "rb");
@@ -65,6 +67,8 @@ void sys_handler(InputHandler *h) {
   case DECREMENT_CHIP_FREQ:
     sys_dec_freq(sys);
     break;
+  default:
+    break;
   }
 }
 
@@ -74,6 +78,8 @@ void media_handler(InputHandler *h) {
   switch (h->alt) {
   case TOGGLE_FPS:
     media_toggle_fps(media);
+    break;
+  default:
     break;
   }
 }
@@ -142,11 +148,31 @@ void *parse_color_arg_value(char *key, char *value) {
   return (void *)color;
 }
 
+void *parse_chip_quirk_arg_value(char *key, char *value) {
+  uint8_t *val = malloc(sizeof(uint8_t));
+  int key_len = strlen(key);
+
+  if (strncmp(key, "shift-quirk", key_len) == 0)
+    *val = SHIFT_IGNORE_VY;
+  if (strncmp(key, "mem-quirk", key_len) == 0)
+    *val = MEM_NOT_MODIFY_I;
+  if (strncmp(key, "jump-quirk", key_len) == 0)
+    *val = JUMP_USE_VX;
+  if (strncmp(key, "vfreset-quirk", key_len) == 0)
+    *val = VF_RESET;
+
+  return (void *)val;
+}
+
 void *display_help_message(char *key, char *value) {
   printf("Usage: chipo8o [FILE] [OPTION]...\n\
 Available options:\n\
   -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
   -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
+      --shift-quirk         ignore VY register for 8XY6, 8XYE instructions and directly modify VX register.\n\
+      --mem-quirk           do not modify index register (I) for FX55, FX65 instructions.\n\
+      --jump-quirk          treat Bnnn jump instruction as Bxnn and add VX instead of V0.\n\
+      --vfreset-quirk       do not set VF register to 0 for 8xy1, 8xy2, 8xy3 instructions.\n\
   -h, --help                display this help and exit\n");
   exit(0);
 }

@@ -22,14 +22,31 @@ int main(int argc, char **argv) {
       (ArgParserOption){.str = "fg",
                         .ch = 'f',
                         .parse = &parse_color_arg_value,
-                        .set = &config_set_foreground}};
+                        .set = &config_set_foreground},
+      (ArgParserOption){.str = "shift-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks},
+      (ArgParserOption){.str = "mem-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks},
+      (ArgParserOption){.str = "jump-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks},
+      (ArgParserOption){.str = "vfreset-quirk",
+                        .ch = '\0',
+                        .parse = &parse_chip_quirk_arg_value,
+                        .set = &config_set_chip_quirks}};
 
-  parse_args(options, 6, argc, argv, config);
+  parse_args(options, 7, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
   SYS *sys = sys_init();
-  CHIP8 chip = chip_init();
+  printf("%d\n", config->chip_quirks);
+  CHIP8 chip = chip_init((ChipConfig){.quirks = config->chip_quirks});
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);
 
@@ -39,8 +56,6 @@ int main(int argc, char **argv) {
 
   register_input_handlers(media, sys, chip);
 
-  uint8_t *vram = chip_get_vram_ref(chip);
-
   while (media_is_active(media)) {
     while (sys_is_chip_active(sys)) {
       chip_run_cycle(chip);
@@ -49,7 +64,7 @@ int main(int argc, char **argv) {
 
     media_start_drawing(media);
     media_read_input(media);
-    media_update_screen(media, vram);
+    media_update_screen(media, chip);
 
     if (chip_is_sound_timer_active(chip)) {
       media_play_sound(media);

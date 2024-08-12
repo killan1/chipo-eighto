@@ -1,6 +1,7 @@
 #ifndef MEDIA_H
 #define MEDIA_H
 
+#include "chip.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -33,7 +34,7 @@ typedef struct {
 
 MEDIA media_init(MediaConfig);
 bool media_is_active(MEDIA);
-void media_update_screen(MEDIA, uint8_t *);
+void media_update_screen(MEDIA, const CHIP8);
 void media_start_drawing(MEDIA);
 void media_stop_drawing(MEDIA);
 void media_destroy(MEDIA);

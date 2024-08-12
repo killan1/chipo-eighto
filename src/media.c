@@ -1,4 +1,5 @@
 #include "media.h"
+#include "chip.h"
 #include "raylib.h"
 #include "utils.h"
 #include <limits.h>
@@ -25,7 +26,6 @@ struct media {
   bool show_fps;
   Color bg_color;
   Color fg_color;
-  size_t screen_scaling;
   AudioStream stream;
 };
 
@@ -87,21 +87,24 @@ bool media_is_active(MEDIA media) { return !WindowShouldClose(); }
 
 void media_toggle_fps(MEDIA media) { media->show_fps = !media->show_fps; }
 
-void media_update_screen(MEDIA media, uint8_t *vram) {
-  size_t x, y;
-  for (x = 0; x < CHIP_SCREEN_WIDTH; x++) {
-    for (y = 0; y < CHIP_SCREEN_HEIGHT; y++)
-      if (vram[y * CHIP_SCREEN_WIDTH + x])
-        DrawRectangle(x * media->screen_scaling, y * media->screen_scaling,
-                      media->screen_scaling, media->screen_scaling,
-                      media->fg_color);
+void media_update_screen(MEDIA media, const CHIP8 chip) {
+  const uint8_t *vram = chip_get_vram_ref(chip);
+  uint8_t screen_width = chip_get_screen_width(chip);
+  uint8_t screen_height = chip_get_screen_height(chip);
+  float wscaling = (float)GetScreenWidth() / screen_width;
+  float hscaling = (float)GetScreenHeight() / screen_height;
+  size_t x, y, screen_scaling = (size_t)MIN(wscaling, hscaling);
+  for (x = 0; x < screen_width; x++) {
+    for (y = 0; y < screen_height; y++) {
+      if (vram[y * screen_width + x]) {
+        DrawRectangle(x * screen_scaling, y * screen_scaling, screen_scaling,
+                      screen_scaling, media->fg_color);
+      }
+    }
   }
 }
 
 void media_start_drawing(MEDIA media) {
-  float wscaling = (float)GetScreenWidth() / CHIP_SCREEN_WIDTH;
-  float hscaling = (float)GetScreenHeight() / CHIP_SCREEN_HEIGHT;
-  media->screen_scaling = (size_t)MIN(wscaling, hscaling);
   BeginDrawing();
   ClearBackground(media->bg_color);
 }

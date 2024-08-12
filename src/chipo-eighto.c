@@ -56,8 +56,6 @@ int main(int argc, char **argv) {
 
   register_input_handlers(media, sys, chip);
 
-  /* uint8_t *vram = chip_get_vram_ref(chip); */
-
   while (media_is_active(media)) {
     while (sys_is_chip_active(sys)) {
       chip_run_cycle(chip);

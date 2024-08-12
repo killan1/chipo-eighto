@@ -26,7 +26,6 @@ struct media {
   bool show_fps;
   Color bg_color;
   Color fg_color;
-  size_t screen_scaling;
   AudioStream stream;
 };
 
@@ -50,7 +49,6 @@ MEDIA media_init(MediaConfig config) {
   media->show_fps = false;
   media->bg_color = media_map_color(config.background_color);
   media->fg_color = media_map_color(config.foreground_color);
-  media->screen_scaling = 10;
 
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT, "Chipo EIGHTo");
@@ -93,22 +91,20 @@ void media_update_screen(MEDIA media, const CHIP8 chip) {
   const uint8_t *vram = chip_get_vram_ref(chip);
   uint8_t screen_width = chip_get_screen_width(chip);
   uint8_t screen_height = chip_get_screen_height(chip);
-  size_t x, y;
+  float wscaling = (float)GetScreenWidth() / screen_width;
+  float hscaling = (float)GetScreenHeight() / screen_height;
+  size_t x, y, screen_scaling = (size_t)MIN(wscaling, hscaling);
   for (x = 0; x < screen_width; x++) {
     for (y = 0; y < screen_height; y++) {
       if (vram[y * screen_width + x]) {
-        DrawRectangle(x * media->screen_scaling, y * media->screen_scaling,
-                      media->screen_scaling, media->screen_scaling,
-                      media->fg_color);
+        DrawRectangle(x * screen_scaling, y * screen_scaling, screen_scaling,
+                      screen_scaling, media->fg_color);
       }
     }
   }
 }
 
 void media_start_drawing(MEDIA media) {
-  float wscaling = (float)GetScreenWidth() / SCHIP_SCREEN_WIDTH;
-  float hscaling = (float)GetScreenHeight() / SCHIP_SCREEN_HEIGHT;
-  media->screen_scaling = (size_t)MIN(wscaling, hscaling);
   BeginDrawing();
   ClearBackground(media->bg_color);
 }

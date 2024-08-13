@@ -24,10 +24,12 @@
 #endif
 
 typedef enum {
-  SHIFT_IGNORE_VY = 1,
-  MEM_NOT_MODIFY_I = 2,
-  JUMP_USE_VX = 4,
-  VF_RESET = 8
+  VF_RESET = 1,
+  MEMORY = 2,
+  DISPLAY = 4,
+  CLIPPING = 8,
+  SHIFTING = 16,
+  JUMPING = 32
 } InstrQuirk;
 typedef struct chip8 *CHIP8;
 typedef struct ChipConfig {

@@ -150,16 +150,20 @@ void *parse_color_arg_value(char *key, char *value) {
 
 void *parse_chip_quirk_arg_value(char *key, char *value) {
   uint8_t *val = malloc(sizeof(uint8_t));
-  int key_len = strlen(key);
+  int value_len = strlen(value);
 
-  if (strncmp(key, "shift-quirk", key_len) == 0)
-    *val = SHIFT_IGNORE_VY;
-  if (strncmp(key, "mem-quirk", key_len) == 0)
-    *val = MEM_NOT_MODIFY_I;
-  if (strncmp(key, "jump-quirk", key_len) == 0)
-    *val = JUMP_USE_VX;
-  if (strncmp(key, "vfreset-quirk", key_len) == 0)
+  if (strncmp(value, "vfreset", value_len) == 0)
     *val = VF_RESET;
+  if (strncmp(value, "memory", value_len) == 0)
+    *val = MEMORY;
+  if (strncmp(value, "display", value_len) == 0)
+    *val = DISPLAY;
+  if (strncmp(value, "clipping", value_len) == 0)
+    *val = CLIPPING;
+  if (strncmp(value, "shifting", value_len) == 0)
+    *val = SHIFTING;
+  if (strncmp(value, "jumping", value_len) == 0)
+    *val = JUMPING;
 
   return (void *)val;
 }
@@ -169,10 +173,13 @@ void *display_help_message(char *key, char *value) {
 Available options:\n\
   -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
   -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
-      --shift-quirk         ignore VY register for 8XY6, 8XYE instructions and directly modify VX register.\n\
-      --mem-quirk           do not modify index register (I) for FX55, FX65 instructions.\n\
-      --jump-quirk          treat Bnnn jump instruction as Bxnn and add VX instead of V0.\n\
-      --vfreset-quirk       do not set VF register to 0 for 8xy1, 8xy2, 8xy3 instructions.\n\
+  -q, --quirk[=QUIRK]       enable a quirk to tweak some known behaviors. Can be used multiple times. Possible values:\n\
+                            vfreset  - set VF register to zero for 8XY1, 8XY2, 8XY3 instructions\n\
+                            memory   - don't modify index register for FX55, FX65 instructions\n\
+                            display  - limiting sprites drawing by 60 per frame\n\
+                            clipping - clip sprites instead of wrapping around to the top of the screen\n\
+                            shifting - ignore VY register and 8XY6, 8XYE instructions and directly modify VX register.\n\
+                            jumping  - add VX register instead of V0 to address for BNNN instruction\n\
   -h, --help                display this help and exit\n");
   exit(0);
 }

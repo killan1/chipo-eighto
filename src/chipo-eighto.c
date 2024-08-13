@@ -23,24 +23,12 @@ int main(int argc, char **argv) {
                         .ch = 'f',
                         .parse = &parse_color_arg_value,
                         .set = &config_set_foreground},
-      (ArgParserOption){.str = "shift-quirk",
-                        .ch = '\0',
-                        .parse = &parse_chip_quirk_arg_value,
-                        .set = &config_set_chip_quirks},
-      (ArgParserOption){.str = "mem-quirk",
-                        .ch = '\0',
-                        .parse = &parse_chip_quirk_arg_value,
-                        .set = &config_set_chip_quirks},
-      (ArgParserOption){.str = "jump-quirk",
-                        .ch = '\0',
-                        .parse = &parse_chip_quirk_arg_value,
-                        .set = &config_set_chip_quirks},
-      (ArgParserOption){.str = "vfreset-quirk",
-                        .ch = '\0',
+      (ArgParserOption){.str = "quirk",
+                        .ch = 'q',
                         .parse = &parse_chip_quirk_arg_value,
                         .set = &config_set_chip_quirks}};
 
-  parse_args(options, 7, argc, argv, config);
+  parse_args(options, 4, argc, argv, config);
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 

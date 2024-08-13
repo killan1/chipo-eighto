@@ -150,6 +150,7 @@ void *parse_color_arg_value(char *key, char *value) {
 
 void *parse_chip_quirk_arg_value(char *key, char *value) {
   uint8_t *val = malloc(sizeof(uint8_t));
+  *val = 0;
   int value_len = strlen(value);
 
   if (strncmp(value, "vfreset", value_len) == 0)

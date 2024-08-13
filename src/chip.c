@@ -231,7 +231,7 @@ static void opcode_8xy1(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] |= chip->regs[y];
-  if ((chip->quirks & VF_RESET))
+  if (chip->quirks & VF_RESET)
     chip->regs[0xF] = 0;
 }
 
@@ -240,7 +240,7 @@ static void opcode_8xy2(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] &= chip->regs[y];
-  if ((chip->quirks & VF_RESET))
+  if (chip->quirks & VF_RESET)
     chip->regs[0xF] = 0;
 }
 
@@ -249,7 +249,7 @@ static void opcode_8xy3(CHIP8 chip) {
   uint8_t y = (uint8_t)(chip->opcode >> 4 & 0xF);
 
   chip->regs[x] ^= chip->regs[y];
-  if ((chip->quirks & VF_RESET))
+  if (chip->quirks & VF_RESET)
     chip->regs[0xF] = 0;
 }
 

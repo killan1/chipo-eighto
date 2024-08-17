@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "args.h"
 #include "chip.h"
 #include "media.h"
 #include "sys.h"
@@ -16,10 +17,10 @@ typedef struct {
 } RomData;
 
 RomData read_rom_file(char *);
-void terminate(const char *msg);
+void terminate(const char *);
 void register_input_handlers(MEDIA, SYS *, CHIP8);
-void *parse_color_arg_value(char *, char *);
-void *parse_chip_quirk_arg_value(char *, char *);
-void *display_help_message(char *, char *);
+void *parse_color_arg_value(char *, char *, void *);
+void *parse_chip_quirk_arg_value(char *, char *, void *);
+void *display_help_message(char *, char *, void *);
 
 #endif

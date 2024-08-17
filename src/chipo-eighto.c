@@ -7,28 +7,61 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv) {
+Config *parse_args_into_config(int argc, char **argv) {
   Config *config = config_init();
 
-  ArgParserOption options[] = {
-      (ArgParserOption){.str = "help",
-                        .ch = 'h',
-                        .parse = &display_help_message,
-                        .set = NULL},
-      (ArgParserOption){.str = "bg",
-                        .ch = 'b',
+  ArgParserOptions *options = args_init_options(4);
+  args_add_options(
+      options, 4,
+      (ArgParserOption){.lng = "bg",
+                        .shrt = 'b',
+                        .description =
+                            "rgba color for screen background in format "
+                            "255,255,255,255. Default: 0,0,0,255",
                         .parse = &parse_color_arg_value,
                         .set = &config_set_background},
-      (ArgParserOption){.str = "fg",
-                        .ch = 'f',
+      (ArgParserOption){.lng = "fg",
+                        .shrt = 'f',
+                        .description =
+                            "rgba color for screen foreground in format "
+                            "255,255,255,255. Default: 0,238,0,255",
                         .parse = &parse_color_arg_value,
                         .set = &config_set_foreground},
-      (ArgParserOption){.str = "quirk",
-                        .ch = 'q',
-                        .parse = &parse_chip_quirk_arg_value,
-                        .set = &config_set_chip_quirks}};
+      (ArgParserOption){
+          .lng = "quirk",
+          .shrt = 'q',
+          .description =
+              "enable a quirk to tweak some known behaviors. Can be used "
+              "multiple times.\n"
+              "\t\t\tPossible values:\n"
+              "\t\t\t\tvfreset  - set VF register to zero for 8XY1, 8XY2, 8XY3 "
+              "instructions\n"
+              "\t\t\t\tmemory   - don't modify index register for FX55, FX65 "
+              "instructions\n"
+              "\t\t\t\tdisplay  - limiting sprites drawing by 60 per frame\n"
+              "\t\t\t\tclipping - clip sprites instead of wrapping around to "
+              "the top of the screen\n"
+              "\t\t\t\tshifting - ignore VY register and 8XY6, 8XYE "
+              "instructions and directly modify VX register.\n"
+              "\t\t\t\tjumping  - add VX register instead of V0 to address for "
+              "BNNN instruction",
+          .parse = &parse_chip_quirk_arg_value,
+          .set = &config_set_chip_quirks},
+      (ArgParserOption){.lng = "help",
+                        .shrt = 'h',
+                        .description = "display this help and exit",
+                        .parse = &display_help_message,
+                        .set = NULL});
 
-  parse_args(options, 4, argc, argv, config);
+  args_parse(options, argc, argv, config);
+  args_destroy(options);
+
+  return config;
+}
+
+int main(int argc, char **argv) {
+  Config *config = parse_args_into_config(argc, argv);
+
   RomData rd = read_rom_file(argv[1]);
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 

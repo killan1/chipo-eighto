@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "args.h"
 #include "chip.h"
 #include <stdlib.h>
 #include <string.h>
@@ -120,7 +121,7 @@ void register_input_handlers(MEDIA media, SYS *sys, CHIP8 chip) {
   media_register_input_handler(media, fps);
 }
 
-void *parse_color_arg_value(char *key, char *value) {
+void *parse_color_arg_value(char *key, char *value, void *optsp) {
   if (value == NULL)
     terminate("Wrong value for color arg");
 
@@ -148,7 +149,7 @@ void *parse_color_arg_value(char *key, char *value) {
   return (void *)color;
 }
 
-void *parse_chip_quirk_arg_value(char *key, char *value) {
+void *parse_chip_quirk_arg_value(char *key, char *value, void *optsp) {
   uint8_t *val = malloc(sizeof(uint8_t));
   *val = 0;
   int value_len = strlen(value);
@@ -169,18 +170,13 @@ void *parse_chip_quirk_arg_value(char *key, char *value) {
   return (void *)val;
 }
 
-void *display_help_message(char *key, char *value) {
-  printf("Usage: chipo8o [FILE] [OPTION]...\n\
-Available options:\n\
-  -b, --bg[=COLOR]          rgba color for screen background in format 255,255,255,255. Default: 0,0,0,255\n\
-  -f, --fg[=COLOR]          rgba color for screen foreground in format 255,255,255,255. Default: 0,238,0,255\n\
-  -q, --quirk[=QUIRK]       enable a quirk to tweak some known behaviors. Can be used multiple times. Possible values:\n\
-                            vfreset  - set VF register to zero for 8XY1, 8XY2, 8XY3 instructions\n\
-                            memory   - don't modify index register for FX55, FX65 instructions\n\
-                            display  - limiting sprites drawing by 60 per frame\n\
-                            clipping - clip sprites instead of wrapping around to the top of the screen\n\
-                            shifting - ignore VY register and 8XY6, 8XYE instructions and directly modify VX register.\n\
-                            jumping  - add VX register instead of V0 to address for BNNN instruction\n\
-  -h, --help                display this help and exit\n");
+void *display_help_message(char *key, char *value, void *optsp) {
+  ArgParserOptions *opts = (ArgParserOptions *)optsp;
+
+  printf("Usage: chipo8o [FILE] [OPTION]...\nAvailable options:\n");
+  for (uint8_t i = 0; i < opts->count; i++)
+    printf("-%c --%-15s\t%s\n", opts->options[i].shrt, opts->options[i].lng,
+           opts->options[i].description);
+
   exit(0);
 }

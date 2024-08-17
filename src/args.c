@@ -1,4 +1,6 @@
 #include "args.h"
+#include "utils.h"
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +17,44 @@ static ArgOption get_arg_type(char *arg) {
   return arg_opt;
 }
 
-void parse_args(ArgParserOption *opts, int optc, int argc, char **argv,
-                void *dist) {
+ArgParserOptions *args_init_options(uint8_t size) {
+  ArgParserOptions *opts = malloc(sizeof(ArgParserOptions));
+
+  if (opts == NULL)
+    terminate("Failed to allocate memory");
+
+  opts->options = malloc(size * sizeof(ArgParserOption));
+
+  if (opts == NULL) {
+    free(opts);
+    terminate("Failed to allocate memory");
+  }
+
+  opts->max_count = size;
+  opts->count = 0;
+
+  return opts;
+}
+
+void args_add_option(ArgParserOptions *opts, ArgParserOption option) {
+  if (opts->count >= opts->max_count)
+    return;
+
+  opts->options[opts->count++] = option;
+}
+
+void args_add_options(ArgParserOptions *opts, int count, ...) {
+  va_list args;
+  va_start(args, count);
+
+  for (int i = 0; i < count; i++) {
+    args_add_option(opts, va_arg(args, ArgParserOption));
+  }
+
+  va_end(args);
+}
+
+void args_parse(ArgParserOptions *opts, int argc, char **argv, void *dist) {
   char *carg, *narg, *optp, *optv;
   ArgOption arg_opt;
   bool has_eq_char;
@@ -56,14 +94,14 @@ void parse_args(ArgParserOption *opts, int optc, int argc, char **argv,
           char c = *optp++;
           if (ch_idx > 1)
             optv = NULL;
-          for (int i = 0; i < optc; i++) {
-            if (opts[i].ch && c == opts[i].ch) {
+          for (size_t i = 0; i < opts->count; i++) {
+            if (opts->options[i].shrt && c == opts->options[i].shrt) {
               void *val = NULL;
 
-              if (opts[i].parse != NULL)
-                val = opts[i].parse(opts[i].str, optv);
-              if (opts[i].set != NULL)
-                opts[i].set(val, dist);
+              if (opts->options[i].parse != NULL)
+                val = opts->options[i].parse(opts->options[i].lng, optv, opts);
+              if (opts->options[i].set != NULL)
+                opts->options[i].set(val, dist);
               free(val);
             }
           }
@@ -73,14 +111,14 @@ void parse_args(ArgParserOption *opts, int optc, int argc, char **argv,
       }
       case ARG_LONG_OPTION:
         *carg = '\0';
-        for (int i = 0; i < optc; i++) {
-          if (strncmp(opts[i].str, optp, strlen(optp)) == 0) {
+        for (int i = 0; i < opts->count; i++) {
+          if (strncmp(opts->options[i].lng, optp, strlen(optp)) == 0) {
             void *val = NULL;
 
-            if (opts[i].parse != NULL)
-              val = opts[i].parse(optp, optv);
-            if (opts[i].set != NULL)
-              opts[i].set(val, dist);
+            if (opts->options[i].parse != NULL)
+              val = opts->options[i].parse(optp, optv, opts);
+            if (opts->options[i].set != NULL)
+              opts->options[i].set(val, dist);
             free(val);
           }
         }
@@ -92,4 +130,9 @@ void parse_args(ArgParserOption *opts, int optc, int argc, char **argv,
 
     argv++;
   }
+}
+
+void args_destroy(ArgParserOptions *opts) {
+  free(opts->options);
+  free(opts);
 }

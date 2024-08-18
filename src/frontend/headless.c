@@ -4,24 +4,14 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#define MAX_INPUT_HANDLERS 100
-
-struct media {
-  InputHandler *ihandlers;
-  uint16_t ihandler_count;
-};
+struct media {};
 
 MEDIA media_init(MediaConfig config) {
   MEDIA headless = malloc(sizeof(struct media));
 
-  headless->ihandlers = malloc(MAX_INPUT_HANDLERS * sizeof(InputHandler));
-
-  if (headless->ihandlers == NULL) {
-    free(headless);
+  if (headless == NULL) {
     terminate("Failed to allocate memory");
   }
-
-  headless->ihandler_count = 0;
 
   return headless;
 }
@@ -32,7 +22,6 @@ void media_update_screen(MEDIA media, const CHIP8 chip) {}
 void media_start_drawing(MEDIA media) {}
 void media_stop_drawing(MEDIA media) {}
 void media_destroy(MEDIA media) {
-  free(media->ihandlers);
   free(media);
 }
 void media_read_input(MEDIA media) {}

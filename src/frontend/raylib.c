@@ -1,7 +1,7 @@
-#include "media.h"
-#include "chip.h"
+#include "../media.h"
+#include "../chip.h"
+#include "../utils.h"
 #include "raylib.h"
-#include "utils.h"
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>

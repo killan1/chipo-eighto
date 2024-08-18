@@ -1,9 +1,29 @@
-#include "chip.h"
-#include "utils.h"
+#include "../chip.h"
+#include "../utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define VRAM_SIZE 0x2000
+#define WIDE_SPRITE_SIZE 16
+#define WIDE_FONTS_START_ADDRESS 80
+#define STACK_SIZE 16
+
+static const uint8_t wide_font[100] = {
+    0x3C, 0x7E, 0xE7, 0xC3, 0xC3, 0xC3, 0xC3, 0xE7, 0x7E, 0x3C, // 0
+    0x18, 0x38, 0x58, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, // 1
+    0x3E, 0x7F, 0xC3, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xFF, 0xFF, // 2
+    0x3C, 0x7E, 0xC3, 0x03, 0x0E, 0x0E, 0x03, 0xC3, 0x7E, 0x3C, // 3
+    0x06, 0x0E, 0x1E, 0x36, 0x66, 0xC6, 0xFF, 0xFF, 0x06, 0x06, // 4
+    0xFF, 0xFF, 0xC0, 0xC0, 0xFC, 0xFE, 0x03, 0xC3, 0x7E, 0x3C, // 5
+    0x3E, 0x7C, 0xC0, 0xC0, 0xFC, 0xFE, 0xC3, 0xC3, 0x7E, 0x3C, // 6
+    0xFF, 0xFF, 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, // 7
+    0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // 8
+    0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C  // 9
+};
 
 struct chip8 {
   uint16_t pc;
@@ -27,9 +47,7 @@ struct chip8 {
   void (*exec)(CHIP8);
 
   uint8_t quirks;
-#ifdef SUPER_CHIP
   bool hires_mode_enabled;
-#endif
 };
 
 static void fetch(CHIP8);
@@ -69,9 +87,7 @@ CHIP8 chip_init(ChipConfig conf) {
   chip->input = 0;
   chip->input_key = 0;
   chip->quirks = conf.quirks;
-#ifdef SUPER_CHIP
   chip->hires_mode_enabled = false;
-#endif
 
   uint8_t i;
   for (i = 0; i < REGS_COUNT; i++) {
@@ -83,11 +99,9 @@ CHIP8 chip_init(ChipConfig conf) {
   for (i = 0; i < 80; i++) {
     chip->mem[i] = font[i];
   }
-#ifdef SUPER_CHIP
   for (i = 0; i < 100; i++) {
     chip->mem[WIDE_FONTS_START_ADDRESS + i] = wide_font[i];
   }
-#endif
 
   return chip;
 }
@@ -137,11 +151,7 @@ static void set_vram_data_at_pos(CHIP8 chip, size_t x, size_t y,
                                  bool wide_pixel_mode) {
   size_t screen_width = (size_t)chip->screen_width;
   if (chip->vram[y * screen_width + x])
-#ifdef SUPER_CHIP
     chip->regs[0xF] += 1;
-#else
-    chip->regs[0xF] = 1;
-#endif
   chip->vram[y * screen_width + x] ^= 1;
 
   if (wide_pixel_mode) {
@@ -340,7 +350,6 @@ static void opcode_Dxyn(CHIP8 chip) {
   uint8_t sprite_data;
 
   chip->regs[0xF] = 0;
-#ifdef SUPER_CHIP
   for (uint16_t row = 0; row < rows; row++) {
     sprite_data = chip->mem[chip->index + row];
 
@@ -376,35 +385,6 @@ static void opcode_Dxyn(CHIP8 chip) {
       }
     }
   }
-#else
-  for (uint16_t row = 0; row < rows; row++) {
-    sprite_data = chip->mem[chip->index + row];
-
-    posy = y + row;
-
-    if (posy > (screen_height - 1)) {
-      if (chip->quirks & CLIPPING)
-        continue;
-      else
-        posy %= screen_height;
-    }
-
-    for (uint8_t col = 0; col < SPRITE_SIZE; col++) {
-      posx = x + col;
-
-      if (posx > (screen_width - 1)) {
-        if (chip->quirks & CLIPPING)
-          continue;
-        else
-          posx %= screen_width;
-      }
-
-      if (sprite_data & 1 << (SPRITE_SIZE - 1 - col)) {
-        set_vram_data_at_pos(chip, posx, posy, false);
-      }
-    }
-  }
-#endif
 }
 
 static void opcode_Ex9E(CHIP8 chip) {
@@ -489,7 +469,6 @@ static void opcode_Fx1E(CHIP8 chip) {
   chip->index += chip->regs[x];
 }
 
-#ifdef SUPER_CHIP
 static void opcode_00FF(CHIP8 chip) { chip->hires_mode_enabled = true; }
 
 static void opcode_00FE(CHIP8 chip) { chip->hires_mode_enabled = false; }
@@ -592,7 +571,6 @@ static void opcode_00FD(CHIP8 chip) {
   chip_destroy(chip);
   terminate("Executing 00FD. Bye.");
 }
-#endif
 
 static void opcode_nop(CHIP8 chip) {}
 
@@ -615,7 +593,6 @@ static void decode(CHIP8 chip) {
     case 0x00EE:
       chip->exec = &opcode_00EE;
       break;
-#ifdef SUPER_CHIP
     case 0x00FF:
       chip->exec = &opcode_00FF;
       break;
@@ -649,7 +626,6 @@ static void decode(CHIP8 chip) {
     case 0x00CF:
       chip->exec = &opcode_00Cn;
       break;
-#endif
     default:
       chip->exec = &opcode_nop;
       break;
@@ -723,11 +699,7 @@ static void decode(CHIP8 chip) {
     chip->exec = &opcode_Cxkk;
     break;
   case 0xD000:
-#ifdef SUPER_CHIP
     chip->exec = (chip->opcode & 0xF) == 0 ? &opcode_Dxy0 : &opcode_Dxyn;
-#else
-    chip->exec = &opcode_Dxyn;
-#endif
     break;
   case 0xE000:
     switch (chip->opcode & 0xFF) {
@@ -771,7 +743,6 @@ static void decode(CHIP8 chip) {
     case 0x0065:
       chip->exec = &opcode_Fx65;
       break;
-#ifdef SUPER_CHIP
     case 0x0030:
       chip->exec = &opcode_Fx30;
       break;
@@ -781,7 +752,6 @@ static void decode(CHIP8 chip) {
     case 0x0085:
       chip->exec = &opcode_Fx85;
       break;
-#endif
     default:
       chip->exec = &opcode_unsupported;
       break;

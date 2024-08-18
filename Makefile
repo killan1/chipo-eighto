@@ -6,6 +6,12 @@ BASE_CFLAGS=--std=c99
 DEBUG_CFLAGS=$(BASE_CFLAGS) -g3 -Wall -Wextra -Wpedantic -fsanitize=address,undefined
 RELEASE_CFLAGS=-O3
 
+ifeq ($(CHIP_BACKEND),super-chip)
+	CHIP = super-chip.c
+else
+	CHIP = chip.c
+endif
+
 VPATH = src
 LIBS = -lraylib -lm
 BUILD_CC = $(CC) $(CLFAGS) -o $@ -c $<

@@ -5,7 +5,22 @@
 #include <string.h>
 #include <time.h>
 
-#define STACK_SIZE 12
+#define STACK_SIZE 16
+#define WIDE_SPRITE_SIZE 16
+#define WIDE_FONTS_START_ADDRESS 80
+
+static const uint8_t wide_font[100] = {
+    0x3C, 0x7E, 0xE7, 0xC3, 0xC3, 0xC3, 0xC3, 0xE7, 0x7E, 0x3C, // 0
+    0x18, 0x38, 0x58, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, // 1
+    0x3E, 0x7F, 0xC3, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xFF, 0xFF, // 2
+    0x3C, 0x7E, 0xC3, 0x03, 0x0E, 0x0E, 0x03, 0xC3, 0x7E, 0x3C, // 3
+    0x06, 0x0E, 0x1E, 0x36, 0x66, 0xC6, 0xFF, 0xFF, 0x06, 0x06, // 4
+    0xFF, 0xFF, 0xC0, 0xC0, 0xFC, 0xFE, 0x03, 0xC3, 0x7E, 0x3C, // 5
+    0x3E, 0x7C, 0xC0, 0xC0, 0xFC, 0xFE, 0xC3, 0xC3, 0x7E, 0x3C, // 6
+    0xFF, 0xFF, 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, // 7
+    0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // 8
+    0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C  // 9
+};
 
 struct chip8 {
   uint16_t pc;
@@ -29,6 +44,7 @@ struct chip8 {
   void (*exec)(CHIP8);
 
   uint8_t quirks;
+  bool hires_mode_enabled;
 };
 
 static void fetch(CHIP8);
@@ -49,7 +65,7 @@ CHIP8 chip_init(ChipConfig conf) {
     terminate("Failed to allocate memory");
   }
 
-  size_t vram_size = VRAM_SIZE;
+  size_t vram_size = VRAM_SIZE << 2;
 
   chip->vram = calloc(vram_size, sizeof(uint8_t));
   if (chip->vram == NULL) {
@@ -58,8 +74,8 @@ CHIP8 chip_init(ChipConfig conf) {
   }
 
   chip->vram_size = vram_size;
-  chip->screen_width = SCREEN_WIDTH;
-  chip->screen_height = SCREEN_HEIGHT;
+  chip->screen_width = SCREEN_WIDTH << 1;
+  chip->screen_height = SCREEN_HEIGHT << 1;
   chip->pc = START_ADDRESS;
   chip->index = 0;
   chip->dt = 0;
@@ -68,6 +84,7 @@ CHIP8 chip_init(ChipConfig conf) {
   chip->input = 0;
   chip->input_key = 0;
   chip->quirks = conf.quirks;
+  chip->hires_mode_enabled = false;
 
   uint8_t i;
   for (i = 0; i < REGS_COUNT; i++) {
@@ -78,6 +95,9 @@ CHIP8 chip_init(ChipConfig conf) {
   }
   for (i = 0; i < 80; i++) {
     chip->mem[i] = font[i];
+  }
+  for (i = 0; i < 100; i++) {
+    chip->mem[WIDE_FONTS_START_ADDRESS + i] = wide_font[i];
   }
 
   return chip;
@@ -128,7 +148,7 @@ static void set_vram_data_at_pos(CHIP8 chip, size_t x, size_t y,
                                  bool wide_pixel_mode) {
   size_t screen_width = (size_t)chip->screen_width;
   if (chip->vram[y * screen_width + x])
-    chip->regs[0xF] = 1;
+    chip->regs[0xF] += 1;
   chip->vram[y * screen_width + x] ^= 1;
 
   if (wide_pixel_mode) {
@@ -332,6 +352,10 @@ static void opcode_Dxyn(CHIP8 chip) {
 
     posy = y + row;
 
+    if (!chip->hires_mode_enabled) {
+      posy *= 2;
+    }
+
     if (posy > (screen_height - 1)) {
       if (chip->quirks & CLIPPING)
         continue;
@@ -342,6 +366,10 @@ static void opcode_Dxyn(CHIP8 chip) {
     for (uint8_t col = 0; col < SPRITE_SIZE; col++) {
       posx = x + col;
 
+      if (!chip->hires_mode_enabled) {
+        posx *= 2;
+      }
+
       if (posx > (screen_width - 1)) {
         if (chip->quirks & CLIPPING)
           continue;
@@ -350,7 +378,7 @@ static void opcode_Dxyn(CHIP8 chip) {
       }
 
       if (sprite_data & 1 << (SPRITE_SIZE - 1 - col)) {
-        set_vram_data_at_pos(chip, posx, posy, false);
+        set_vram_data_at_pos(chip, posx, posy, !chip->hires_mode_enabled);
       }
     }
   }
@@ -438,6 +466,109 @@ static void opcode_Fx1E(CHIP8 chip) {
   chip->index += chip->regs[x];
 }
 
+static void opcode_00FF(CHIP8 chip) { chip->hires_mode_enabled = true; }
+
+static void opcode_00FE(CHIP8 chip) { chip->hires_mode_enabled = false; }
+
+static void opcode_00Cn(CHIP8 chip) {
+  int16_t x, y, rows = chip->opcode & 0xF;
+
+  if (!chip->hires_mode_enabled)
+    rows *= 2;
+
+  for (x = 0; x < chip->screen_width; x++)
+    for (y = chip->screen_height - 1; y >= 0; y--) {
+      chip->vram[y * chip->screen_width + x] =
+          y < rows ? 0 : chip->vram[(y - rows) * chip->screen_width + x];
+    }
+}
+
+static void opcode_00FB(CHIP8 chip) {
+  int16_t x, y, pixels = chip->hires_mode_enabled ? 4 : 8;
+
+  for (x = chip->screen_width - 1; x >= 0; x--)
+    for (y = 0; y < chip->screen_height; y++) {
+      chip->vram[y * chip->screen_width + x] =
+          x < pixels ? 0 : chip->vram[y * chip->screen_width + x - pixels];
+    }
+}
+
+static void opcode_00FC(CHIP8 chip) {
+  uint16_t x, y, pixels = chip->hires_mode_enabled ? 4 : 8;
+
+  for (x = 0; x < chip->screen_width; x++)
+    for (y = 0; y < chip->screen_height; y++) {
+      chip->vram[y * chip->screen_width + x] =
+          x > chip->screen_width - 1 - pixels
+              ? 0
+              : chip->vram[y * chip->screen_width + x + pixels];
+    }
+}
+
+static void opcode_Dxy0(CHIP8 chip) {
+  uint8_t vx = chip->regs[(uint8_t)(chip->opcode >> 8 & 0xF)];
+  uint8_t vy = chip->regs[(uint8_t)(chip->opcode >> 4 & 0xF)];
+
+  uint8_t screen_width = chip->screen_width;
+  uint8_t screen_height = chip->screen_height;
+  uint8_t x = vx & (screen_width - 1);
+  uint8_t y = vy & (screen_height - 1);
+
+  uint16_t posx = 0, posy = 0;
+  uint16_t sprite_data;
+
+  chip->regs[0xF] = 0;
+  for (uint16_t row = 0; row < WIDE_SPRITE_SIZE; row++) {
+    sprite_data = chip->mem[chip->index + row * 2] << 8 |
+                  chip->mem[chip->index + row * 2 + 1];
+
+    posy = y + row;
+
+    if (!chip->hires_mode_enabled) {
+      posy *= 2;
+    }
+
+    if (posy > (screen_height - 1)) {
+      if (chip->quirks & CLIPPING)
+        continue;
+      else
+        posy %= screen_height;
+    }
+
+    for (uint16_t col = 0; col < WIDE_SPRITE_SIZE; col++) {
+      posx = x + col;
+
+      if (!chip->hires_mode_enabled) {
+        posx *= 2;
+      }
+
+      if (posx > (screen_width - 1)) {
+        if (chip->quirks & CLIPPING)
+          continue;
+        else
+          posx %= screen_width;
+      }
+
+      if (sprite_data & 1 << (WIDE_SPRITE_SIZE - 1 - col)) {
+        set_vram_data_at_pos(chip, posx, posy, !chip->hires_mode_enabled);
+      }
+    }
+  }
+}
+
+static void opcode_Fx30(CHIP8 chip) {
+  uint8_t x = (uint8_t)(chip->opcode >> 8 & 0xF);
+  chip->index = WIDE_FONTS_START_ADDRESS + (chip->regs[x] & 0xF) * 10;
+}
+
+static void opcode_Fx75(CHIP8 chip) {}
+static void opcode_Fx85(CHIP8 chip) {}
+
+static void opcode_00FD(CHIP8 chip) {
+  chip_destroy(chip);
+  terminate("Executing 00FD. Bye.");
+}
+
 static void opcode_nop(CHIP8 chip) {}
 
 static void fetch(CHIP8 chip) {
@@ -458,6 +589,39 @@ static void decode(CHIP8 chip) {
       break;
     case 0x00EE:
       chip->exec = &opcode_00EE;
+      break;
+    case 0x00FF:
+      chip->exec = &opcode_00FF;
+      break;
+    case 0x00FE:
+      chip->exec = &opcode_00FE;
+      break;
+    case 0x00FB:
+      chip->exec = &opcode_00FB;
+      break;
+    case 0x00FC:
+      chip->exec = &opcode_00FC;
+      break;
+    case 0x00FD:
+      chip->exec = &opcode_00FD;
+      break;
+    case 0x00C0:
+    case 0x00C1:
+    case 0x00C2:
+    case 0x00C3:
+    case 0x00C4:
+    case 0x00C5:
+    case 0x00C6:
+    case 0x00C7:
+    case 0x00C8:
+    case 0x00C9:
+    case 0x00CA:
+    case 0x00CB:
+    case 0x00CC:
+    case 0x00CD:
+    case 0x00CE:
+    case 0x00CF:
+      chip->exec = &opcode_00Cn;
       break;
     default:
       chip->exec = &opcode_nop;
@@ -532,7 +696,7 @@ static void decode(CHIP8 chip) {
     chip->exec = &opcode_Cxkk;
     break;
   case 0xD000:
-    chip->exec = &opcode_Dxyn;
+    chip->exec = (chip->opcode & 0xF) == 0 ? &opcode_Dxy0 : &opcode_Dxyn;
     break;
   case 0xE000:
     switch (chip->opcode & 0xFF) {
@@ -575,6 +739,15 @@ static void decode(CHIP8 chip) {
       break;
     case 0x0065:
       chip->exec = &opcode_Fx65;
+      break;
+    case 0x0030:
+      chip->exec = &opcode_Fx30;
+      break;
+    case 0x0075:
+      chip->exec = &opcode_Fx75;
+      break;
+    case 0x0085:
+      chip->exec = &opcode_Fx85;
       break;
     default:
       chip->exec = &opcode_unsupported;

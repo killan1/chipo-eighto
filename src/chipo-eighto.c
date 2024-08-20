@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
   printf("Loading rom %s (%ld)\n", argv[1], rd.size);
 
   SYS *sys = sys_init();
-  printf("%d\n", config->chip_quirks);
   CHIP8 chip = chip_init((ChipConfig){.quirks = config->chip_quirks});
   chip_load_rom(chip, rd.data, rd.size);
   free(rd.data);

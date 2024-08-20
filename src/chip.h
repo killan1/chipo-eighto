@@ -5,7 +5,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define SCREEN_WIDTH 64
+#define SCREEN_HEIGHT 32
 #define MEM_SIZE 0x1000
+#define VRAM_SIZE 0x0800
 #define START_ADDRESS 0x0200
 #define REGS_COUNT 16
 #define SPRITE_SIZE 8

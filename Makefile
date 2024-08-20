@@ -7,9 +7,11 @@ DEBUG_CFLAGS=$(BASE_CFLAGS) -g3 -Wall -Wextra -Wpedantic -fsanitize=address,unde
 RELEASE_CFLAGS=-O3
 
 ifeq ($(CHIP_BACKEND),super-chip)
-	CHIP = super-chip.c
+	CHIP_IMPL = super-chip.c
+else ifeq ($(CHIP_BACKEND),chip-8)
+	CHIP_IMPL = chip.c
 else
-	CHIP = chip.c
+	CHIP_IMPL = chip.c
 endif
 
 VPATH = src
@@ -43,7 +45,7 @@ $(BUILD_DIR)/bin/chipo8o: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
 $(BUILD_DIR)/chipo-eighto.o: chipo-eighto.c
 	$(BUILD_CC)
-$(BUILD_DIR)/chip.o: chip.c
+$(BUILD_DIR)/chip.o: $(CHIP_IMPL)
 	$(BUILD_CC)
 $(BUILD_DIR)/media.o: media.c
 	$(BUILD_CC)

@@ -84,5 +84,5 @@ chipo8o path/to/rom --bg=100,100,100,255 --fg=50,0,128,255
 |  =  | Increase chip frequency (ops/frame) by 50, but not more than UINT16_MAX |
 |  `  | Toggle FPS counter |
 
-## LIcense
-This project is open source and available under the [MIT License](LICENSE).
+## License
+This project is open source and available under the [The Unlicense License](LICENSE).

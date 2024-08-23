@@ -85,4 +85,4 @@ chipo8o path/to/rom --bg=100,100,100,255 --fg=50,0,128,255
 |  `  | Toggle FPS counter |
 
 ## License
-This project is open source and available under the [The Unlicense License](LICENSE).
+This project is open source and available under the [MIT License](LICENSE).
